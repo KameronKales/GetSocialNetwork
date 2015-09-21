@@ -94,7 +94,7 @@ class LinkedIn(SocialNetwork):
                         country = dictCountry
                         return country
         else:
-            return 'Unknown place'
+            return 'Unresolved place'
 
     def loadCountryDict(self):
         script_dir = os.path.dirname(__file__)
