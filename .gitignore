@@ -3,6 +3,7 @@
 *.pyc
 *.xlsx
 *.xls
+*.myStats.py
 
 # Windows image file caches
 Thumbs.db
