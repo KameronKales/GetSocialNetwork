@@ -2,6 +2,8 @@
 *.txt
 *.pyc
 stats.py
+*.xlsx
+*.xls
 
 # Windows image file caches
 Thumbs.db
