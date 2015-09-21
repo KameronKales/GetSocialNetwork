@@ -5,7 +5,6 @@ import unicodedata
 
 
 class SocialNetwork(object):
-    """ A base class to login and load the pages """
     def __init__(self, login, password, startURL, loginURL):
         self.login = login
         self.password = password
