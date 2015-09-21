@@ -1,3 +1,8 @@
+*.html
+*.txt
+*.pyc
+stats.py
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
