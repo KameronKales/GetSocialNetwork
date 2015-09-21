@@ -66,7 +66,6 @@ class LinkedIn(SocialNetwork):
         self.countryDict = self.loadCountryDict()
         self.num_con = self.getNumCons()
         self.conData = self.getConnections()
-        self.companies = self.getCompanies() # TODO for speed sake I prolly need to take out this method.
 
     def getNumCons(self):
         numCon = re.search(r'\"numConnections\":\d+', self.homePage)
@@ -111,7 +110,7 @@ class LinkedIn(SocialNetwork):
         get the list of all connections
         """
         params = {'start' : 0,
-                  'count' : self.num_con, #TODO replace with self.num_con
+                  'count' : 10, #TODO replace with self.num_con
                   'fields': 'id,name,first_name,last_name,company,title,geo_location,tags,emails,sources,display_sources,last_interaction,secure_profile_image_url',
                   'sort'  : '-last_interaction',
                   '_'     : '1440213783954'}
@@ -126,33 +125,18 @@ class LinkedIn(SocialNetwork):
 
         return conData #return a dictionary
 
-    def getCompanies(self):
+    def getPeopleAtCompanies(self):
         conData = self.conData
         companies = {}
         for person in conData['contacts']:
 
             if person['company']:
-
-                if person['company']['id'] in companies:
-                    continue
+                company = person['company']['id']
+                if company in companies:
+                    companies[company].append(person['first_name']+' '+person['last_name'])
 
                 else:
-                    dataCompany = person['company']['id']
-                    companies[dataCompany] = []
-
-        return companies
-
-
-    def getPeopleAtCompanies(self):
-        companies = self.companies
-        for company in self.companies:
-
-            for person in self.conData['contacts']:
-
-                if person['company']:
-
-                    if person['company']['id'] == company:
-                        companies[company].append(person['first_name']+" "+person['last_name'])
+                    companies[company] = [person['first_name']+' '+person['last_name']]
 
         return companies
 
@@ -186,3 +170,61 @@ class LinkedIn(SocialNetwork):
                 countries['Unspecified']['unspecified city'].append(personNameLastName)
 
         return countries
+
+    def getPosition(self):
+        positions = {'manager':[], 'animator':[],
+                    'ceo':[], 'cto':[],
+                    'owner':[], 'professor':[],
+                    'supervisor':[], 'recruiter':[],
+                    'producer':[], 'artist':[],
+                    'marketing':[], 'designer':[],
+                    'developer':[], 'strategist':[],
+                    'td': [],'scientist':[],
+                    'freelace':[], 'compositor':[],
+                    'artist':[], 'generalist':[],
+                    'founder':[], 'coordinator':[],
+                    'creative':[], 'lighter':[],
+                    'director':[], 'technical director':[],
+                    'engineer':[], 'head': [],
+                    'senior':[], 'software':[],
+                    'junior':[], 'other':[] }
+
+
+        for person in self.conData['contacts']:
+            personNameLastname = person['first_name']+' '+person['last_name']
+            title = person['title']
+            title = title.split(' ')
+            extendedTitle = []
+            match = False
+            for word in title:
+                word = word.lower().split('/')
+                extendedTitle.extend(word)
+
+            if 'owner' in extendedTitle:
+                positions['owner'].append(personNameLastname)
+                continue
+            if 'supervisor' in extendedTitle:
+                positions['supervisor'].append(personNameLastname)
+                continue
+            elif 'senior' in extendedTitle:
+                positions['senior'].append(personNameLastname)
+                continue
+            elif 'lead' in extendedTitle:
+                positions['lead'].append(personNameLastname)
+                continue
+
+            for word in extendedTitle:
+                for position in positions:
+                    print word, position
+                    if word == position and personNameLastname not in positions[position]:
+                        positions[position].append(personNameLastname)
+                        break
+
+                    else:
+                        if personNameLastname not in positions['other']:
+                            positions['other'].append(personNameLastname)
+
+
+
+
+        return positions

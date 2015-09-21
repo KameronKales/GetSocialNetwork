@@ -37,9 +37,8 @@ class LinkedInStats(object):
 
 
     def companyStats(self):
-        companies = self.link.getCompanies()
         companies_people =  self.link.getPeopleAtCompanies()
-        all_companies = float(len(companies))
+        all_companies = float(len(companies_people))
         d = {}
 
         for company in companies_people:
