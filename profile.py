@@ -154,14 +154,3 @@ class LinkedinProfile(Profile):
     def getNameLastName(self):
         """ The method can be used to create a key value for a dictionary of profiles. """
         return self.nameLastName
-
-
-p = LinkedinProfile('vasia','kamyshkin',None,None,None,1988,6,7)
-p.setCompanyPeriodTitle('b&b',2,12,'manager')
-p.setCompanyPeriodTitle('culo',4,1,'manager',True)
-print p.getTotalTime()
-print p.getPeriod('b&b')
-print p.getPeriod('culo')
-print p.getAllCompanies()
-print p.getCurrentPosition()
-print p.getNameLastName()

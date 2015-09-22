@@ -11,6 +11,7 @@ class LinkedInStats(object):
 
         self.companyStatsDir = os.path.join(self.selfDir, "companies stats.txt")
         self.countriesStatDir = os.path.join(self.selfDir, "countries stats.txt")
+        self.positionStats = os.path.join(self.selfDir, "position stats.txt")
 
     @staticmethod
     def _write(fileName,*args):
@@ -37,9 +38,8 @@ class LinkedInStats(object):
 
 
     def companyStats(self):
-        companies = self.link.getCompanies()
         companies_people =  self.link.getPeopleAtCompanies()
-        all_companies = float(len(companies))
+        all_companies = float(len(companies_people))
         d = {}
 
         for company in companies_people:
@@ -75,6 +75,18 @@ class LinkedInStats(object):
             f.write("total locations in profile: %s\n" %(totalLocations))
             f.write("\n")
             for country, city in sorted(locations.items(), key = lambda x:len(x[1]), reverse=True):
-                self._write(f,country,countryCount[country],city)
+                self._write(f, country, countryCount[country], city)
 
             f.write('\n')
+
+    def workStats(self):
+        positionCount = {}
+        positions = self.link.getPosition()
+
+        for position in positions:
+            count = len(positions[position])
+            positionCount[position] = count
+
+        with open(self.positionStats,'w') as f:
+            for position in positions:
+                self._write(f, position, positionCount[position], positions[position])

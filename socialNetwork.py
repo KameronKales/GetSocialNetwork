@@ -1,5 +1,4 @@
 import urllib, urllib2, cookielib, re, json, math, os
-from BeautifulSoup import BeautifulSoup
 from pprint import pprint
 import unicodedata
 
@@ -42,12 +41,11 @@ class SocialNetwork(object):
         starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf
         """
         loginPage = self.loadPage(self.start_url)
-        soup = BeautifulSoup(loginPage)
-        csrf = soup.find( id = "loginCsrfParam-login")['value']
-
+        csrfMatch = re.compile(r'(?<=id="loginCsrfParam-login" type="hidden" value=")[A-z,0-9,-]+')
+        csrf = csrfMatch.search(loginPage).group()
         loginData = {'session_key'      : self.login,
                      'session_password' : self.password,
-                     'loginCsrfParam'   : csrf}
+                     'loginCsrfParam'   : csrf }
 
         homePage = self.loadPage(self.login_url, loginData)
 
@@ -66,7 +64,6 @@ class LinkedIn(SocialNetwork):
         self.countryDict = self.loadCountryDict()
         self.num_con = self.getNumCons()
         self.conData = self.getConnections()
-        self.companies = self.getCompanies() # TODO for speed sake I prolly need to take out this method.
 
     def getNumCons(self):
         numCon = re.search(r'\"numConnections\":\d+', self.homePage)
@@ -126,33 +123,18 @@ class LinkedIn(SocialNetwork):
 
         return conData #return a dictionary
 
-    def getCompanies(self):
+    def getPeopleAtCompanies(self):
         conData = self.conData
         companies = {}
         for person in conData['contacts']:
 
             if person['company']:
-
-                if person['company']['id'] in companies:
-                    continue
+                company = person['company']['id']
+                if company in companies:
+                    companies[company].append(person['first_name']+' '+person['last_name'])
 
                 else:
-                    dataCompany = person['company']['id']
-                    companies[dataCompany] = []
-
-        return companies
-
-
-    def getPeopleAtCompanies(self):
-        companies = self.companies
-        for company in self.companies:
-
-            for person in self.conData['contacts']:
-
-                if person['company']:
-
-                    if person['company']['id'] == company:
-                        companies[company].append(person['first_name']+" "+person['last_name'])
+                    companies[company] = [person['first_name']+' '+person['last_name']]
 
         return companies
 
@@ -186,3 +168,61 @@ class LinkedIn(SocialNetwork):
                 countries['Unspecified']['unspecified city'].append(personNameLastName)
 
         return countries
+
+
+    def getPosition(self):
+
+        def _positionMatch(extendedTitle, positions):
+            if not isinstance(extendedTitle, list):
+                raise TypeError('{} is not a list'.format(extendedTitle) )
+
+            for word in extendedTitle:
+                for position in positions:
+
+                    if word == position:
+                        return position
+
+            else:
+                return 'other'
+
+        positions = {'manager':[], 'animator':[], 'ceo':[], 'cto':[], 'owner':[], 'professor':[],
+                    'supervisor':[], 'recruiter':[], 'producer':[], 'artist':[], 'marketing':[], 'designer':[],
+                    'developer':[], 'strategist':[], 'td': [],'scientist':[], 'freelance':[], 'compositor':[],
+                    'artist':[], 'generalist':[], 'founder':[], 'coordinator':[], 'creative':[], 'lighter':[],
+                    'director':[], 'technical director':[], 'engineer':[], 'senior':[], 'software':[],
+                    'junior':[], 'other':[], 'lead': [] }
+
+
+        for person in self.conData['contacts']:
+            n = unicodedata.normalize('NFKD',person['first_name']).encode('ascii','ignore')
+            l = unicodedata.normalize('NFKD',person['last_name']).encode('ascii','ignore')
+            personNameLastname = n+' '+l
+            if person['title']:
+                title = unicodedata.normalize('NFKD',person['title']).encode('ascii','ignore')
+                title = title.split(' ')
+                extendedTitle = []
+                for word in title:
+                    word = word.lower().split('/')
+                    extendedTitle.extend(word)
+                print personNameLastname, extendedTitle
+
+                if 'owner' in extendedTitle:
+                    positions['owner'].append(personNameLastname)
+                    continue
+                elif 'supervisor' in extendedTitle:
+                    positions['supervisor'].append(personNameLastname)
+                    continue
+                elif 'senior' in extendedTitle:
+                    positions['senior'].append(personNameLastname)
+                    continue
+                elif 'lead' in extendedTitle:
+                    positions['lead'].append(personNameLastname)
+                    continue
+                else:
+                    position = _positionMatch(extendedTitle, positions)
+                    positions[position].append(personNameLastname)
+
+            else:
+                continue
+
+        return positions
