@@ -1,5 +1,4 @@
 import urllib, urllib2, cookielib, re, json, math, os
-from BeautifulSoup import BeautifulSoup
 from pprint import pprint
 import unicodedata
 
@@ -42,12 +41,11 @@ class SocialNetwork(object):
         starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf
         """
         loginPage = self.loadPage(self.start_url)
-        soup = BeautifulSoup(loginPage)
-        csrf = soup.find( id = "loginCsrfParam-login")['value']
-
+        csrfMatch = re.compile(r'(?<=id="loginCsrfParam-login" type="hidden" value=")[A-z,0-9,-]+')
+        csrf = csrfMatch.search(loginPage).group()
         loginData = {'session_key'      : self.login,
                      'session_password' : self.password,
-                     'loginCsrfParam'   : csrf}
+                     'loginCsrfParam'   : csrf }
 
         homePage = self.loadPage(self.login_url, loginData)
 
@@ -110,7 +108,7 @@ class LinkedIn(SocialNetwork):
         get the list of all connections
         """
         params = {'start' : 0,
-                  'count' : 10, #TODO replace with self.num_con
+                  'count' : self.num_con, #TODO replace with self.num_con
                   'fields': 'id,name,first_name,last_name,company,title,geo_location,tags,emails,sources,display_sources,last_interaction,secure_profile_image_url',
                   'sort'  : '-last_interaction',
                   '_'     : '1440213783954'}
@@ -171,60 +169,60 @@ class LinkedIn(SocialNetwork):
 
         return countries
 
+
     def getPosition(self):
-        positions = {'manager':[], 'animator':[],
-                    'ceo':[], 'cto':[],
-                    'owner':[], 'professor':[],
-                    'supervisor':[], 'recruiter':[],
-                    'producer':[], 'artist':[],
-                    'marketing':[], 'designer':[],
-                    'developer':[], 'strategist':[],
-                    'td': [],'scientist':[],
-                    'freelace':[], 'compositor':[],
-                    'artist':[], 'generalist':[],
-                    'founder':[], 'coordinator':[],
-                    'creative':[], 'lighter':[],
-                    'director':[], 'technical director':[],
-                    'engineer':[], 'head': [],
-                    'senior':[], 'software':[],
-                    'junior':[], 'other':[] }
 
-
-        for person in self.conData['contacts']:
-            personNameLastname = person['first_name']+' '+person['last_name']
-            title = person['title']
-            title = title.split(' ')
-            extendedTitle = []
-            match = False
-            for word in title:
-                word = word.lower().split('/')
-                extendedTitle.extend(word)
-
-            if 'owner' in extendedTitle:
-                positions['owner'].append(personNameLastname)
-                continue
-            if 'supervisor' in extendedTitle:
-                positions['supervisor'].append(personNameLastname)
-                continue
-            elif 'senior' in extendedTitle:
-                positions['senior'].append(personNameLastname)
-                continue
-            elif 'lead' in extendedTitle:
-                positions['lead'].append(personNameLastname)
-                continue
+        def _positionMatch(extendedTitle, positions):
+            if not isinstance(extendedTitle, list):
+                raise TypeError('{} is not a list'.format(extendedTitle) )
 
             for word in extendedTitle:
                 for position in positions:
-                    print word, position
-                    if word == position and personNameLastname not in positions[position]:
-                        positions[position].append(personNameLastname)
-                        break
 
-                    else:
-                        if personNameLastname not in positions['other']:
-                            positions['other'].append(personNameLastname)
+                    if word == position:
+                        return position
+
+            else:
+                return 'other'
+
+        positions = {'manager':[], 'animator':[], 'ceo':[], 'cto':[], 'owner':[], 'professor':[],
+                    'supervisor':[], 'recruiter':[], 'producer':[], 'artist':[], 'marketing':[], 'designer':[],
+                    'developer':[], 'strategist':[], 'td': [],'scientist':[], 'freelance':[], 'compositor':[],
+                    'artist':[], 'generalist':[], 'founder':[], 'coordinator':[], 'creative':[], 'lighter':[],
+                    'director':[], 'technical director':[], 'engineer':[], 'senior':[], 'software':[],
+                    'junior':[], 'other':[], 'lead': [] }
 
 
+        for person in self.conData['contacts']:
+            n = unicodedata.normalize('NFKD',person['first_name']).encode('ascii','ignore')
+            l = unicodedata.normalize('NFKD',person['last_name']).encode('ascii','ignore')
+            personNameLastname = n+' '+l
+            if person['title']:
+                title = unicodedata.normalize('NFKD',person['title']).encode('ascii','ignore')
+                title = title.split(' ')
+                extendedTitle = []
+                for word in title:
+                    word = word.lower().split('/')
+                    extendedTitle.extend(word)
+                print personNameLastname, extendedTitle
 
+                if 'owner' in extendedTitle:
+                    positions['owner'].append(personNameLastname)
+                    continue
+                elif 'supervisor' in extendedTitle:
+                    positions['supervisor'].append(personNameLastname)
+                    continue
+                elif 'senior' in extendedTitle:
+                    positions['senior'].append(personNameLastname)
+                    continue
+                elif 'lead' in extendedTitle:
+                    positions['lead'].append(personNameLastname)
+                    continue
+                else:
+                    position = _positionMatch(extendedTitle, positions)
+                    positions[position].append(personNameLastname)
+
+            else:
+                continue
 
         return positions
