@@ -3,7 +3,7 @@ from socialNetwork import LinkedIn
 
 
 class LinkedInStats(object):
-
+    """ A class which outputs all the data as a .txt file for future use in Microsoft Excel app. """
     def __init__(self, login, password):
 
         self.link = LinkedIn(login, password)
@@ -14,6 +14,7 @@ class LinkedInStats(object):
         self.positionStats = os.path.join(self.selfDir, "position stats.txt")
 
     @staticmethod
+    """ A helper funtion writes all the argumets to the .txt file. """
     def _write(fileName,*args):
         flatList = []
 
@@ -38,6 +39,7 @@ class LinkedInStats(object):
 
 
     def companyStats(self):
+        """ A function outputs a .txt file with a list of companies and people working in them. """
         companies_people =  self.link.getPeopleAtCompanies()
         all_companies = float(len(companies_people))
         d = {}
@@ -57,6 +59,7 @@ class LinkedInStats(object):
                 self._write(f,company,value,names)
 
     def locationStats(self):
+        """ A fuction outputs a .txt file with countries and number of people living in the countries. """
         locations = self.link.getCountries()
         totalLocations = len(locations)
         countryCount = {}
@@ -74,12 +77,13 @@ class LinkedInStats(object):
         with open(self.countriesStatDir,'w') as f:
             f.write("total locations in profile: %s\n" %(totalLocations))
             f.write("\n")
-            for country, city in sorted(locations.items(), key = lambda x:len(x[1]), reverse=True):
-                self._write(f, country, countryCount[country], city)
+            for country, cities in sorted(locations.items(), key = lambda x:len(x[1]), reverse=True):
+                self._write(f, country, countryCount[country], cities)
 
             f.write('\n')
 
     def workStats(self):
+        """ A function which sorts the job titles into a list of positions and outputs a .txt file. """
         positionCount = {}
         positions = self.link.getPosition()
 
