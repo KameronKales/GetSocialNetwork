@@ -1,4 +1,5 @@
 import urllib, urllib2, cookielib, re, json, math, os
+import profile
 from pprint import pprint
 import unicodedata
 
@@ -33,7 +34,7 @@ class SocialNetwork(object):
             return str(response.read())
 
         except:
-            raise IOError('{} is not accesable.'.fromat(url))
+            raise IOError('{} is not accesable.'.format(url))
 
 
     def loginPage(self):
@@ -170,7 +171,7 @@ class LinkedIn(SocialNetwork):
         return countries
 
 
-    def getPosition(self):
+    def getPositions(self):
 
         def _positionMatch(extendedTitle, positions):
             if not isinstance(extendedTitle, list):
@@ -226,3 +227,48 @@ class LinkedIn(SocialNetwork):
                 continue
 
         return positions
+
+    def getProfile(self, name, lastname):
+        profileID = 0
+        profileURL = 'https://www.linkedin.com/profile/view?'
+        profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
+        for profile in self.conData['contacts']:
+
+            if name == profile['first_name'] and lastname == profile['last_name']:
+                profileID = profile['id']
+                profileID = profileID[3:]
+                break
+
+        else:
+            raise ValueError('{} {} is not in the contacts'.format(name, lastname) )
+
+        x = 0
+        size = 10
+        offset = 0
+        conData = []
+        listCons = []
+
+        switch = True
+        while(switch):
+
+            paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
+            profileConData = self.loadPage(profileConDataURL, paramsConnections)
+            profileConData = json.loads(profileConData)
+
+            if 'connections' not in profileConData['content'] or 'connections' not in profileConData['content']['connections']:
+                break
+
+            listCons = profileConData['content']['connections']['connections']
+            conData.extend(listCons)
+            offset += 10
+            x+=1
+
+        i=0
+        for profile in conData:
+            try:
+                print profile['fmt__full_name']
+                i+=1
+                print i
+            except:
+                continue
+        # profileConData['content']['connections']['connections'][0]['fmt__full_name']
