@@ -14,7 +14,6 @@ class LinkedInStats(object):
         self.positionStats = os.path.join(self.selfDir, "position stats.txt")
 
     @staticmethod
-    """ A helper funtion writes all the argumets to the .txt file. """
     def _write(fileName,*args):
         flatList = []
 

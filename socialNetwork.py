@@ -226,3 +226,54 @@ class LinkedIn(SocialNetwork):
                 continue
 
         return positions
+
+    def _getProfileConnections(self, profileID):
+
+        profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
+        x = 0
+        size = 10
+        offset = 0
+        conData = []
+        listCons = []
+        switch = True
+
+        while(switch):
+            paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
+            profileConData = self.loadPage(profileConDataURL, paramsConnections)
+            profileConData = json.loads(profileConData)
+
+            if 'connections' not in profileConData['content'] or 'connections' not in profileConData['content']['connections']:
+                break
+
+            listCons = profileConData['content']['connections']['connections']
+            conData.extend(listCons)
+            offset += 10
+            x+=1
+
+        return conData
+
+
+    def _getProfileID(self, name, lastname):
+        profileID = 0
+        profileURL = 'https://www.linkedin.com/profile/view?'
+        for profile in self.conData['contacts']:
+
+            if name == profile['first_name'] and lastname == profile['last_name']:
+                profileID = profile['id']
+                profileID = profileID[3:]
+                break
+
+        else:
+            raise ValueError('{} {} is not in the contacts'.format(name, lastname) )
+
+        return profileID
+
+
+    def _getProfileExperience(self):
+        raise NotImplementedError('_getProfileExperience is not implemented.')
+
+
+    def getProfileData(self, name, lastname):
+        profileID = self._getProfileID(name, lastname)
+        profileConData = self._getProfileConnections(profileID)
+        print len(profileConData)
