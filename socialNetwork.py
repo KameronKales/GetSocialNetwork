@@ -1,4 +1,4 @@
-import urllib, urllib2, cookielib, re, json, math, os
+import urllib, urllib2, cookielib, re, json, math, os, sys
 from pprint import pprint
 import unicodedata
 
@@ -33,7 +33,7 @@ class SocialNetwork(object):
             return str(response.read())
 
         except:
-            raise IOError('{} is not accesable.'.fromat(url))
+            raise IOError('{} is not accesable.'.format(url))
 
 
     def loginPage(self):
@@ -204,7 +204,6 @@ class LinkedIn(SocialNetwork):
                 for word in title:
                     word = word.lower().split('/')
                     extendedTitle.extend(word)
-                print personNameLastname, extendedTitle
 
                 if 'owner' in extendedTitle:
                     positions['owner'].append(personNameLastname)
@@ -227,17 +226,18 @@ class LinkedIn(SocialNetwork):
 
         return positions
 
-    def _getProfileConnections(self, profileID):
 
+    def _getProfileConnections(self, profileID, depth, maxcount):
+        depth -= 1
         profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
         x = 0
         size = 10
         offset = 0
         conData = []
-        listCons = []
-        switch = True
+        deepContacts = []
+        contatcs = []
 
-        while(switch):
+        while(True):
             paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
             profileConData = self.loadPage(profileConDataURL, paramsConnections)
             profileConData = json.loads(profileConData)
@@ -250,30 +250,67 @@ class LinkedIn(SocialNetwork):
             offset += 10
             x+=1
 
-        return conData
+            if offset >= maxcount and maxcount != -1:
+                break
+
+        for dic in conData:
+            name = dic['fmt__full_name'].split(" ")
+            memberID = dic['memberID']
+
+            if depth > 0:
+                deepContacts = self._getProfileConnections(memberID, depth, maxcount)
+
+            if len(name)==2:
+                contact = {'first_name': name[0], 'last_name': name[1], 'id': memberID, 'profile connections': deepContacts }
+            else:
+                contact = {'first_name': name[0], 'last_name': '', 'id': memberID, 'profile connections': deepContacts }
+
+            contatcs.append(contact)
+
+        return contatcs
 
 
     def _getProfileID(self, name, lastname):
+        if not isinstance(name, basestring) or not isinstance(lastname, basestring):
+            raise TypeError('{} or {} is not a string'.format(name, lastname) )
+
         profileID = 0
-        profileURL = 'https://www.linkedin.com/profile/view?'
         for profile in self.conData['contacts']:
 
             if name == profile['first_name'] and lastname == profile['last_name']:
                 profileID = profile['id']
                 profileID = profileID[3:]
-                break
+                return profileID
 
         else:
-            raise ValueError('{} {} is not in the contacts'.format(name, lastname) )
-
-        return profileID
+            raise ValueError('{} {} is not in the contacts.'.format(name, lastname) )
 
 
-    def _getProfileExperience(self):
-        raise NotImplementedError('_getProfileExperience is not implemented.')
-
-
-    def getProfileData(self, name, lastname):
+    def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1):
+        profileConData = {'contacts':[]}
         profileID = self._getProfileID(name, lastname)
-        profileConData = self._getProfileConnections(profileID)
-        print len(profileConData)
+        profileConData['contacts'] = self._getProfileConnections(profileID, depth, maxcount)
+        print type(profileConData)
+        with open(fileDir, 'w') as f:
+            json.dump(profileConData, f, indent=4, sort_keys=True)
+
+        return profileConData
+
+
+    def writeAllConnections(self, fileDir, depth=0, maxcount=-1):
+        if not isinstance(fileDir, basestring):
+            raise TypeError('{} is not a string.'.format(fileDir) )
+        if not isinstance(depth, int):
+            raise TypeError('{} is not an integer'.format(depth) )
+
+        connectionsTree = {'contacts':[]}
+        for profile in self.conData['contacts']:
+            profileID = profile['id'][3:]
+            connections = self._getProfileConnections(profileID, depth, maxcount)
+            profile['connections'] = connections
+            connectionsTree['contatcs'].append(profile)
+
+        with open(fileDir, 'w') as f:
+            json.dump(connectionsTree, f, indent=4, sort_keys=True)
+
+        return connectionsTree
