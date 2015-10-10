@@ -154,3 +154,25 @@ class LinkedinProfile(Profile):
     def getNameLastName(self):
         """ The method can be used to create a key value for a dictionary of profiles. """
         return self.nameLastName
+
+
+class ParseProfile(Object):
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def getTitle(cls, page):
+        pass
+
+    @classmethod
+    def getLocation(cls, page):
+        pass
+
+    @classmethod
+    def getWorkExperience(cls, page):
+        pass
+
+    @classmethod
+    def outputProfile(cls, page):
+        pass
