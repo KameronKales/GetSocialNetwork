@@ -21,7 +21,7 @@ class SocialNetwork(object):
         self.start_url = startURL
         self.login_url = loginURL
 
-    def loadPage(self, url, data = None, tryAgain = 3):
+    def loadPage(self, url, data = None, tryAgain = 2):
 
         if tryAgain <= 0:
             raise IOError('{} {} is not accesable.'.format(url, data) )
@@ -233,7 +233,6 @@ class LinkedIn(SocialNetwork):
 
 
     def _getProfileConnections(self, profileID, depth, maxcount):
-        time.sleep(random.uniform(0.1,1) )
         depth -= 1
         profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
         x = 0
@@ -245,11 +244,12 @@ class LinkedIn(SocialNetwork):
 
         while(True):
             paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
-            profileConData = self.loadPage(profileConDataURL, paramsConnections)
             try:
+                profileConData = self.loadPage(profileConDataURL, paramsConnections)
                 profileConData = json.loads(profileConData)
+
             except:
-                # raise IOError('Can not load json for the link {}{}'.format(profileConDataURL, paramsConnections) )
+                print 'Can not load #profileID', profileID, '#offset', offset, '#x', x
                 break
 
             if 'connections' not in profileConData['content'] or 'connections' not in profileConData['content']['connections']:
