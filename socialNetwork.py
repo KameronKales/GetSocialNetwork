@@ -354,7 +354,6 @@ class LinkedIn(SocialNetwork):
         endTimesSize = len(endTimes)
         startTimeSize = len(startTimes)
 
-
         workExp = {}
         if startTimeSize > endTimesSize:
             endTimes.insert(0, 'Present')
@@ -373,5 +372,14 @@ class LinkedIn(SocialNetwork):
                 durationPattern = re.compile(r'(?<=&#8211; Present \()[ A-z,0-9]+')
                 duration = durationPattern.search(profilePage)
                 if duration: duration = duration.group()
-            workExp[title] = {'start': start, 'end': end, 'duration': duration}
+
+            companyPattern = re.compile(r'[ A-z,0-9]+(?=</a></strong></span></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+            company = companyPattern.search(profilePage)
+
+            if not company:
+                companyPattern = re.compile(r'[ A-z,0-9]+(?=</a></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+                company = companyPattern.search(profilePage)
+
+            workExp[title] = {'start': start, 'end': end, 'duration': duration, 'company': company.group()}
+
         print workExp
