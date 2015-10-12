@@ -1,5 +1,4 @@
-import datetime, math, json
-
+import datetime, math, json, re
 class WorkTime(object):
     def __init__(self, iyear, imonth):
         if not isinstance(iyear, int):
@@ -162,17 +161,6 @@ class ParseProfile(Object):
         pass
 
     @classmethod
-    def getTitle(cls, page):
-        pass
-
-    @classmethod
-    def getLocation(cls, page):
-        pass
-
-    @classmethod
-    def getWorkExperience(cls, page):
-        pass
-
-    @classmethod
-    def outputProfile(cls, page):
-        pass
+    def workExperience(cls, page):
+        timePattern = re.compile(r'<time>[A-z,0-9]+</time>')
+        

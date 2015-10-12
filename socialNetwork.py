@@ -275,8 +275,6 @@ class LinkedIn(SocialNetwork):
             else:
                 contact = {'first_name': name[0], 'last_name': name[1], 'id': memberID, 'profile connections': deepContacts }
 
-
-
             # nameLastname = '{} {}'.format(contact['first_name'], contact['last_name'])
             nameLastname = contact['first_name'] + ' ' + contact['last_name']
             contatcs[nameLastname] = contact
@@ -301,7 +299,7 @@ class LinkedIn(SocialNetwork):
 
 
     def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1):
-        nameLastname = '{} {}'.format(name, lastname)
+        nameLastname = name + ' ' + lastname
         profileID = self._getProfileID(name, lastname)
         profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{} } }
         profileConData[nameLastname]['connections'] = self._getProfileConnections(profileID, depth, maxcount)
@@ -336,3 +334,44 @@ class LinkedIn(SocialNetwork):
             json.dump(connectionsTree, f, indent=4, sort_keys=True)
 
         return connectionsTree
+
+    def getProfileData(self, name, lastname):
+        nameLastname = name + ' ' + lastname
+        profileID = self._getProfileID(name, lastname)
+        profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+profileID
+        profilePage = self.loadPage(profileURL)
+        profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
+
+        titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ A-z,0-9]+')
+        titles = titlePattern.findall(profilePage)
+
+        startTimePattern = re.compile(r'(?<=<span class=\"experience-date-locale\"><time>)[ A-z,0-9]+')
+        startTimes = startTimePattern.findall(profilePage)
+
+        endTimePattern = re.compile(r'(?<=</time> &#8211; <time>)[ A-z,0-9]+')
+        endTimes = endTimePattern.findall(profilePage)
+
+        endTimesSize = len(endTimes)
+        startTimeSize = len(startTimes)
+
+
+        workExp = {}
+        if startTimeSize > endTimesSize:
+            endTimes.insert(0, 'Present')
+
+        for x in range(startTimeSize):
+            start = startTimes[startTimeSize-1-x]
+            end = endTimes[startTimeSize-1-x]
+            title = titles[startTimeSize-1-x]
+            durationPattern = re.compile(r'(?<='+ end + r'</time> \()[ A-z,0-9]+')
+            duration = durationPattern.search(profilePage)
+
+            if duration: duration = duration.group()
+
+            if end == 'Present':
+                print 'we are on the Present'
+                durationPattern = re.compile(r'(?<=&#8211; Present \()[ A-z,0-9]+')
+                duration = durationPattern.search(profilePage)
+                if duration: duration = duration.group()
+            workExp[title] = {'start': start, 'end': end, 'duration': duration}
+        print workExp
