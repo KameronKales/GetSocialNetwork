@@ -3,6 +3,7 @@
 *.pyc
 *.xlsx
 *.xls
+*json
 testStats.py
 
 # Windows image file caches
