@@ -44,6 +44,30 @@ class WorkTime(object):
 
         self.month = months
 
+def convertDate(stringDate):
+    """ The function converts a string date into pair of integers. """
+    if not isinstance(stringDate, basestring):
+        raise TypeError('{} is not a string'.format(stringDate) )
+    yearPattern = re.compile(r'[0-9](?= year)')
+    year = yearPattern.search(stringDate)
+
+    if year:
+        year = year.group()
+    else:
+        year = 0
+
+    monthPattern = re.compile(r'[0-9](?= month)')
+    month = monthPattern.search(stringDate)
+
+    if month:
+        month = month.group()
+    else:
+        month = 0
+
+    return int(year), int(month)
+
+
+
 
 class Profile(object):
 
@@ -153,14 +177,3 @@ class LinkedinProfile(Profile):
     def getNameLastName(self):
         """ The method can be used to create a key value for a dictionary of profiles. """
         return self.nameLastName
-
-
-class ParseProfile(Object):
-
-    def __init__(self):
-        pass
-
-    @classmethod
-    def workExperience(cls, page):
-        timePattern = re.compile(r'<time>[A-z,0-9]+</time>')
-        

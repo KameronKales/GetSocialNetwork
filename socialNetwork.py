@@ -232,7 +232,7 @@ class LinkedIn(SocialNetwork):
         return positions
 
 
-    def _getProfileConnections(self, profileID, depth, maxcount):
+    def _getProfileConnections(self, profileID, depth, maxcount, minSleep = 2):
         depth -= 1
         profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
         x = 0
@@ -243,6 +243,8 @@ class LinkedIn(SocialNetwork):
         contatcs = {}
 
         while(True):
+            sleepTime = random.uniform(minSleep, minSleep*2)
+            time.sleep(sleepTime)
             paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
             try:
                 profileConData = self.loadPage(profileConDataURL, paramsConnections)
@@ -268,7 +270,7 @@ class LinkedIn(SocialNetwork):
             memberID = dic['memberID']
 
             if depth > 0:
-                deepContacts = self._getProfileConnections(memberID, depth, maxcount)
+                deepContacts = self._getProfileConnections(memberID, depth, maxcount, minSleep)
 
             if len(name)==1:
                 contact = {'first_name': name[0], 'last_name': '', 'id': memberID, 'profile connections': deepContacts }
@@ -298,19 +300,19 @@ class LinkedIn(SocialNetwork):
             raise ValueError('{} {} is not in the contacts.'.format(name, lastname) )
 
 
-    def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1):
+    def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1, minSleep = 2):
         nameLastname = name + ' ' + lastname
         profileID = self._getProfileID(name, lastname)
         profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{} } }
-        profileConData[nameLastname]['connections'] = self._getProfileConnections(profileID, depth, maxcount)
-        print type(profileConData)
+        profileConData[nameLastname]['connections'] = self._getProfileConnections(profileID, depth, maxcount, minSleep)
+
         with open(fileDir, 'w') as f:
             json.dump(profileConData, f, indent=4, sort_keys=True)
 
         return profileConData
 
 
-    def getAllConnections(self, fileDir, depth=0, maxcount=-1):
+    def getAllConnections(self, fileDir, depth=0, maxcount=-1, minSleep = 2):
         if not isinstance(fileDir, basestring):
             raise TypeError('{} is not a string.'.format(fileDir) )
         if not isinstance(depth, int):
@@ -321,7 +323,7 @@ class LinkedIn(SocialNetwork):
             profileID = profile['id'][3:]
             # nameLastname = '{} {}'.format(profile['first_name'], profile['last_name'])
             nameLastname = profile['first_name'] + ' ' + profile['last_name']
-            connections = self._getProfileConnections(profileID, depth, maxcount)
+            connections = self._getProfileConnections(profileID, depth, maxcount, minSleep)
             profile['connections'] = connections
             profile['num_cons'] = len(connections)
             profile.pop('tags')
@@ -335,12 +337,11 @@ class LinkedIn(SocialNetwork):
 
         return connectionsTree
 
-    def getProfileData(self, name, lastname):
-        nameLastname = name + ' ' + lastname
-        profileID = self._getProfileID(name, lastname)
-        profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+profileID
+    def _getWorkExperience(self, profileID):
+
+        profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+str(profileID)
         profilePage = self.loadPage(profileURL)
-        profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
+        # profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
 
         titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ A-z,0-9]+')
         titles = titlePattern.findall(profilePage)
@@ -353,33 +354,93 @@ class LinkedIn(SocialNetwork):
 
         endTimesSize = len(endTimes)
         startTimeSize = len(startTimes)
-
+        startEndDifference = startTimeSize - endTimesSize
         workExp = {}
-        if startTimeSize > endTimesSize:
-            endTimes.insert(0, 'Present')
+        for i in range(startEndDifference):
+            endTimes.insert(i, 'Present')
 
         for x in range(startTimeSize):
             start = startTimes[startTimeSize-1-x]
             end = endTimes[startTimeSize-1-x]
             title = titles[startTimeSize-1-x]
-            durationPattern = re.compile(r'(?<='+ end + r'</time> \()[ A-z,0-9]+')
+            durationPattern = re.compile(r'(?<='+ end + r'</time> \()[ A-z,0-9,|,/]+')
             duration = durationPattern.search(profilePage)
 
             if duration: duration = duration.group()
 
             if end == 'Present':
-                print 'we are on the Present'
+
                 durationPattern = re.compile(r'(?<=&#8211; Present \()[ A-z,0-9]+')
                 duration = durationPattern.search(profilePage)
                 if duration: duration = duration.group()
 
-            companyPattern = re.compile(r'[ A-z,0-9]+(?=</a></strong></span></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+            companyPattern = re.compile(r'[ A-z,0-9,.,/]+(?=</a></strong></span></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
             company = companyPattern.search(profilePage)
 
             if not company:
-                companyPattern = re.compile(r'[ A-z,0-9]+(?=</a></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+                companyPattern = re.compile(r'[ A-z,0-9,.,/]+(?=</a></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
                 company = companyPattern.search(profilePage)
 
-            workExp[title] = {'start': start, 'end': end, 'duration': duration, 'company': company.group()}
+            if company: company = company.group()
 
-        print workExp
+            workExp[company] = {'start': start, 'end': end, 'duration': duration, 'title': title}
+
+        return workExp
+
+
+    def getProfileExp(self, name, lastname):
+        profileId = self._getProfileID(name, lastname)
+        workExp = self._getWorkExperience(profileId)
+        return workExp
+
+
+    def getAllExperience(self, fileDir, numberProfiles = 199, minSleepTime = 2):
+        profilesExp = {}
+        workExp = {}
+        count = 0
+
+        userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
+                            'https://www.linkedin.com/profile/view?id=AAIAAA_doisB8NJHxZBU_a3qUco4QCK7JGgrVFA&trk=nav_responsive_tab_profile_pic',
+                            'https://www.linkedin.com/home?trk=nav_responsive_tab_home',
+                            'https://www.linkedin.com/people/pymk/hub?trk=hp-identity-connections',
+                            'https://www.linkedin.com/job/home?trk=nav_responsive_sub_nav_jobs',
+                            'https://www.linkedin.com/profile/preview?locale=ru_RU&trk=prof-0-sb-preview-primary-button',
+                            'https://www.linkedin.com/vsearch/p?company=FRAME+ONE+ANIMATION&trk=prof-exp-company-name',
+                            'https://www.linkedin.com/messaging/thread/6029330728980930560',
+                            'https://www.linkedin.com/wvmx/profile?trk=nav_responsive_sub_nav_wvmp',
+                            'https://www.linkedin.com/edu/school?id=20946&trk=prof-following-school-logo']
+
+        for profile in self.conData['contacts']:
+
+            if count >= numberProfiles:
+                break
+
+            sleepTime = random.uniform(minSleepTime, minSleepTime*2)
+            time.sleep(sleepTime)
+            print sleepTime
+            randomPage = random.choice(userBehaviorUrls)
+            
+            print 'visiting rand page'
+            self.loadPage(randomPage)
+
+            sleepTime = random.uniform(minSleepTime, minSleepTime*2)
+            time.sleep(sleepTime)
+
+            profileId = int(profile['id'][3:])
+            nameLastname = profile['first_name'] + ' ' + profile['last_name']
+            try:
+                print 'getting the profile exp', profileId
+                workExp = self._getWorkExperience(profileId)
+                profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId}
+                print 'ok'
+                print '### count:', count
+                count +=1
+            except:
+                print 'could not get the profile exp', profileId
+                print '!!! count', count
+                break
+
+        with open(fileDir,'w') as f:
+            json.dump(profilesExp, f, indent=4, sort_keys=True)
+
+        return workExp
