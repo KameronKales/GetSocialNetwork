@@ -343,7 +343,7 @@ class LinkedIn(SocialNetwork):
         profilePage = self.loadPage(profileURL)
         # profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
 
-        titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ A-z,0-9]+')
+        titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9]+')
         titles = titlePattern.findall(profilePage)
 
         startTimePattern = re.compile(r'(?<=<span class=\"experience-date-locale\"><time>)[ A-z,0-9]+')
@@ -353,16 +353,16 @@ class LinkedIn(SocialNetwork):
         endTimes = endTimePattern.findall(profilePage)
 
         endTimesSize = len(endTimes)
-        startTimeSize = len(startTimes)
-        startEndDifference = startTimeSize - endTimesSize
+        startTimesSize = len(startTimes)
+        startEndDifference = startTimesSize - endTimesSize
         workExp = {}
         for i in range(startEndDifference):
             endTimes.insert(i, 'Present')
 
-        for x in range(startTimeSize):
-            start = startTimes[startTimeSize-1-x]
-            end = endTimes[startTimeSize-1-x]
-            title = titles[startTimeSize-1-x]
+        for x in range(startTimesSize):
+            start = startTimes[startTimesSize-1-x]
+            end = endTimes[startTimesSize-1-x]
+            title = titles[startTimesSize-1-x]
             durationPattern = re.compile(r'(?<='+ end + r'</time> \()[ A-z,0-9,|,/]+')
             duration = durationPattern.search(profilePage)
 
@@ -394,10 +394,16 @@ class LinkedIn(SocialNetwork):
         return workExp
 
 
-    def getAllExperience(self, fileDir, numberProfiles = 199, minSleepTime = 2):
-        profilesExp = {}
+    def getAllExperience(self, fileDir, numberProfiles = 199, minSleepTime = 4):
+
         workExp = {}
         count = 0
+        profilesExp = {'skipped profiles': []}
+        # if the the there was previous use of the method, the method will look for a file to update the initial dict
+        if os.path.exists(fileDir):
+            with open(fileDir,'r') as f:
+                profilesExp = json.load(f)
+                profilesExp['skipped profiles'] = []
 
         userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
                             'https://www.linkedin.com/profile/view?id=AAIAAA_doisB8NJHxZBU_a3qUco4QCK7JGgrVFA&trk=nav_responsive_tab_profile_pic',
@@ -415,30 +421,39 @@ class LinkedIn(SocialNetwork):
             if count >= numberProfiles:
                 break
 
+            profileId = int(profile['id'][3:])
+            nameLastname = profile['first_name'] + ' ' + profile['last_name']
+            #skip the profiles which are in the dictionary profilesExp
+            if nameLastname in profilesExp:
+                print 'skiping profile', profilesExp[nameLastname]['id']
+                continue
+
             sleepTime = random.uniform(minSleepTime, minSleepTime*2)
             time.sleep(sleepTime)
             print sleepTime
             randomPage = random.choice(userBehaviorUrls)
-            
+
             print 'visiting rand page'
             self.loadPage(randomPage)
 
             sleepTime = random.uniform(minSleepTime, minSleepTime*2)
             time.sleep(sleepTime)
-
-            profileId = int(profile['id'][3:])
-            nameLastname = profile['first_name'] + ' ' + profile['last_name']
             try:
-                print 'getting the profile exp', profileId
-                workExp = self._getWorkExperience(profileId)
-                profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId}
-                print 'ok'
-                print '### count:', count
-                count +=1
+                try:
+                    print 'getting the profile exp', profileId
+                    workExp = self._getWorkExperience(profileId)
+                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId}
+                    print 'ok'
+                    print '### count:', count
+                    count +=1
+                except IOError:
+                    print 'could not get the profile exp', profileId
+                    print '!!! count', count
+                    break
             except:
-                print 'could not get the profile exp', profileId
-                print '!!! count', count
-                break
+                profilesExp['skipped profiles'].append(profileId)
+                print '____ skipping profile', profileId
+                continue
 
         with open(fileDir,'w') as f:
             json.dump(profilesExp, f, indent=4, sort_keys=True)
