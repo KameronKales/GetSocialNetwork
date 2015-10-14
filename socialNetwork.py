@@ -77,7 +77,7 @@ class LinkedIn(SocialNetwork):
 
     def _getCountryByCity(self, city):
         country = None
-        city = unicodedata.normalize('NFKD', city).encode('ascii','ignore')
+        # city = unicodedata.normalize('NFKD', city).encode('ascii','ignore')
         city = re.sub(" Area", '', city)
         city = re.sub(" Metropolitan", '', city)
         city = re.sub(" Bay", '', city)
@@ -173,6 +173,16 @@ class LinkedIn(SocialNetwork):
                 countries['Unspecified']['unspecified city'].append(personNameLastName)
 
         return countries
+
+    def _getCountry(self, location):
+        """ The method takes a profile['geo_location']['name'] dictionary value and outputs the country index. """
+        location =  location.split(',')
+        _city = location[0]
+        country = self._getCountryByCity(_city)
+        return country
+
+
+
 
 
     def getPosition(self):
@@ -337,11 +347,23 @@ class LinkedIn(SocialNetwork):
 
         return connectionsTree
 
-    def _getWorkExperience(self, profileID):
+    def _getProfileData(self, profileID):
 
         profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+str(profileID)
         profilePage = self.loadPage(profileURL)
         # profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
+        country = None
+        locationPattern = re.compile(r'(?<=name=\'location\' title=\"Find other members in )[ A-z,0-9,.]+')
+        location = locationPattern.search(profilePage)
+        if location:
+            print '######location found'
+            location = location.group()
+            country = self._getCountry(location)
+
+        profilePicturePattern = re.compile(r'(?<=<div class=\"profile-picture\"> <img src=\')[A-z0-9.:/]+')
+        profilePicture = profilePicturePattern.search(profilePage)
+        if profilePicture:
+            profilePicture = profilePicture.group()
 
         titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9]+')
         titles = titlePattern.findall(profilePage)
@@ -385,16 +407,16 @@ class LinkedIn(SocialNetwork):
 
             workExp[company] = {'start': start, 'end': end, 'duration': duration, 'title': title}
 
-        return workExp
+        return workExp, country, profilePicture
 
 
-    def getProfileExp(self, name, lastname):
+    def getProfileData(self, name, lastname):
         profileId = self._getProfileID(name, lastname)
-        workExp = self._getWorkExperience(profileId)
-        return workExp
+        workExp, country, profilePic = self._getProfileData(profileId)
+        return workExp, country, profilePic
 
 
-    def getAllExperience(self, fileDir, numberProfiles = 199, minSleepTime = 4):
+    def getAllData(self, fileDir, numberProfiles = 199, minSleepTime = 4):
 
         workExp = {}
         count = 0
@@ -441,8 +463,8 @@ class LinkedIn(SocialNetwork):
             try:
                 try:
                     print 'getting the profile exp', profileId
-                    workExp = self._getWorkExperience(profileId)
-                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId}
+                    workExp, country, profilePic = self._getProfileData(profileId)
+                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic}
                     print 'ok'
                     print '### count:', count
                     count +=1
