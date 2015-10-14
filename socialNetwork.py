@@ -356,7 +356,6 @@ class LinkedIn(SocialNetwork):
         locationPattern = re.compile(r'(?<=name=\'location\' title=\"Find other members in )[ A-z,0-9,.]+')
         location = locationPattern.search(profilePage)
         if location:
-            print '######location found'
             location = location.group()
             country = self._getCountry(location)
 
