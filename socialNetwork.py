@@ -179,7 +179,7 @@ class LinkedIn(SocialNetwork):
         location =  location.split(',')
         _city = location[0]
         country = self._getCountryByCity(_city)
-        return country
+        return country, _city
 
 
 
@@ -357,28 +357,28 @@ class LinkedIn(SocialNetwork):
         location = locationPattern.search(profilePage)
         if location:
             location = location.group()
-            country = self._getCountry(location)
-
-        profilePicturePattern = re.compile(r'(?<=<div class=\"profile-picture\"> <img src=\')[A-z0-9.:/]+')
-        profilePicture = profilePicturePattern.search(profilePage)
-        if profilePicture:
-            profilePicture = profilePicture.group()
+            country, city = self._getCountry(location)
 
         titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9]+')
         titles = titlePattern.findall(profilePage)
 
         startTimePattern = re.compile(r'(?<=<span class=\"experience-date-locale\"><time>)[ A-z,0-9]+')
         startTimes = startTimePattern.findall(profilePage)
+        endTimes = []
 
-        endTimePattern = re.compile(r'(?<=</time> &#8211; <time>)[ A-z,0-9]+')
-        endTimes = endTimePattern.findall(profilePage)
+        for start in startTimes:
+            endTimePattern = re.compile(r'(?<=<span class=\"experience-date-locale\"><time>' + start+ r'</time> &#8211; <time>)[ A-z,0-9]+')
+            endTime = endTimePattern.findall(profilePage)
+            if len(endTime)==0:
+                endTime = ['Present']
+            endTimes.extend(endTime)
 
         endTimesSize = len(endTimes)
         startTimesSize = len(startTimes)
         startEndDifference = startTimesSize - endTimesSize
         workExp = {}
-        for i in range(startEndDifference):
-            endTimes.insert(i, 'Present')
+        # for i in range(startEndDifference):
+        #     endTimes.insert(i, 'Present')
 
         for x in range(startTimesSize):
             start = startTimes[startTimesSize-1-x]
@@ -406,25 +406,25 @@ class LinkedIn(SocialNetwork):
 
             workExp[company] = {'start': start, 'end': end, 'duration': duration, 'title': title}
 
-        return workExp, country, profilePicture
+        return workExp, country, city
 
 
     def getProfileData(self, name, lastname):
         profileId = self._getProfileID(name, lastname)
-        workExp, country, profilePic = self._getProfileData(profileId)
-        return workExp, country, profilePic
+        workExp, country, city = self._getProfileData(profileId)
+        return workExp, country, city
 
 
-    def getAllData(self, fileDir, numberProfiles = 199, minSleepTime = 4):
+    def getAllData(self, fileDir, numberProfiles=-1, minSleepTime=4):
 
         workExp = {}
+        errorProfiles = []
         count = 0
-        profilesExp = {'skipped profiles': []}
+        profilesExp = {}
         # if the the there was previous use of the method, the method will look for a file to update the initial dict
         if os.path.exists(fileDir):
             with open(fileDir,'r') as f:
                 profilesExp = json.load(f)
-                profilesExp['skipped profiles'] = []
 
         userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
                             'https://www.linkedin.com/profile/view?id=AAIAAA_doisB8NJHxZBU_a3qUco4QCK7JGgrVFA&trk=nav_responsive_tab_profile_pic',
@@ -439,9 +439,9 @@ class LinkedIn(SocialNetwork):
 
         for profile in self.conData['contacts']:
 
-            if count >= numberProfiles:
+            if count >= numberProfiles and numberProfiles != -1:
                 break
-
+            profilePic = profile['secure_profile_image_url']
             profileId = int(profile['id'][3:])
             nameLastname = profile['first_name'] + ' ' + profile['last_name']
             #skip the profiles which are in the dictionary profilesExp
@@ -462,8 +462,8 @@ class LinkedIn(SocialNetwork):
             try:
                 try:
                     print 'getting the profile exp', profileId
-                    workExp, country, profilePic = self._getProfileData(profileId)
-                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic}
+                    workExp, country, city = self._getProfileData(profileId)
+                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic, 'city':city}
                     print 'ok'
                     print '### count:', count
                     count +=1
@@ -472,11 +472,11 @@ class LinkedIn(SocialNetwork):
                     print '!!! count', count
                     break
             except:
-                profilesExp['skipped profiles'].append(profileId)
+                errorProfiles.append(profileId)
                 print '____ skipping profile', profileId
                 continue
 
         with open(fileDir,'w') as f:
             json.dump(profilesExp, f, indent=4, sort_keys=True)
 
-        return workExp
+        return profilesExp, errorProfiles
