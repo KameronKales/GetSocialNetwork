@@ -75,16 +75,26 @@ class LinkedIn(SocialNetwork):
         number = numCon.group().split(':')[1]
         return number
 
-    def _getCountryByCity(self, city):
+
+    def _getCountryByCity(self, location):
+        city = None
         country = None
-        # city = unicodedata.normalize('NFKD', city).encode('ascii','ignore')
+        location =  location.split(',')
+
+        if len(location) == 3:
+            city = location[1]
+            city = re.sub(r'[ ](?=[A-z,0-9])','', city, 1)
+
+        else:
+            city = location[0]
+
         city = re.sub(" Area", '', city)
         city = re.sub(" Metropolitan", '', city)
         city = re.sub(" Bay", '', city)
         city = re.sub("Greater ", '', city)
         city = re.sub(r" \(\w+\)", '', city) # takes out everything that is inside ().
         city = re.sub(r'\/[A-z ]*', '', city) # takes out everything that comes after /.
-
+        # print city
         for dictCountry in self.countryDict:
             for dictCity in self.countryDict[dictCountry]:
                 cityMatch = re.compile(dictCity)
@@ -94,9 +104,10 @@ class LinkedIn(SocialNetwork):
                     match = match.group()
                     if len(match) == len(city):
                         country = dictCountry
-                        return country
+                        # print country
+                        return country, city
         else:
-            return 'Unresolved place'
+            return 'Unresolved place', city
 
     def loadCountryDict(self):
         script_dir = os.path.dirname(__file__)
@@ -144,7 +155,7 @@ class LinkedIn(SocialNetwork):
         return companies
 
 
-    def getCountries(self):
+    def quickGetCountries(self):
         countries = {'Unspecified':{'unspecified city':[]} }
 
         count = 0
@@ -154,11 +165,9 @@ class LinkedIn(SocialNetwork):
             personNameLastName = '{} {}'.format(name, lastname)
             if person['geo_location']:
                 location = person['geo_location']['name']
-                location =  location.split(',')
 
                 if location:
-                    _city = location[0]
-                    country = self._getCountryByCity(_city)
+                    country = self._getCountryByCity(location)
 
                     if country in countries:
 
@@ -173,16 +182,6 @@ class LinkedIn(SocialNetwork):
                 countries['Unspecified']['unspecified city'].append(personNameLastName)
 
         return countries
-
-    def _getCountry(self, location):
-        """ The method takes a profile['geo_location']['name'] dictionary value and outputs the country index. """
-        location =  location.split(',')
-        _city = location[0]
-        country = self._getCountryByCity(_city)
-        return country, _city
-
-
-
 
 
     def getPosition(self):
@@ -352,12 +351,15 @@ class LinkedIn(SocialNetwork):
         profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+str(profileID)
         profilePage = self.loadPage(profileURL)
         # profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
+        city = None
         country = None
+        rawLocation = None
         locationPattern = re.compile(r'(?<=name=\'location\' title=\"Find other members in )[ A-z,0-9,.]+')
         location = locationPattern.search(profilePage)
         if location:
             location = location.group()
-            country, city = self._getCountry(location)
+            rawLocation = location
+            country, city = self._getCountryByCity(location)
 
         titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9]+')
         titles = titlePattern.findall(profilePage)
@@ -406,13 +408,13 @@ class LinkedIn(SocialNetwork):
 
             workExp[company] = {'start': start, 'end': end, 'duration': duration, 'title': title}
 
-        return workExp, country, city
+        return workExp, country, city, rawLocation
 
 
     def getProfileData(self, name, lastname):
         profileId = self._getProfileID(name, lastname)
-        workExp, country, city = self._getProfileData(profileId)
-        return workExp, country, city
+        workExp, country, city, rawLocation = self._getProfileData(profileId)
+        return workExp, country, city, rawLocation
 
 
     def getAllData(self, fileDir, numberProfiles=-1, minSleepTime=4):
@@ -425,17 +427,17 @@ class LinkedIn(SocialNetwork):
         if os.path.exists(fileDir):
             with open(fileDir,'r') as f:
                 profilesExp = json.load(f)
-
+        # random linkedin links
         userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
-                            'https://www.linkedin.com/profile/view?id=AAIAAA_doisB8NJHxZBU_a3qUco4QCK7JGgrVFA&trk=nav_responsive_tab_profile_pic',
                             'https://www.linkedin.com/home?trk=nav_responsive_tab_home',
+                            'https://www.linkedin.com/premium/products?trk=nav_responsive_sub_nav_upgrade',
                             'https://www.linkedin.com/people/pymk/hub?trk=hp-identity-connections',
                             'https://www.linkedin.com/job/home?trk=nav_responsive_sub_nav_jobs',
-                            'https://www.linkedin.com/profile/preview?locale=ru_RU&trk=prof-0-sb-preview-primary-button',
-                            'https://www.linkedin.com/vsearch/p?company=FRAME+ONE+ANIMATION&trk=prof-exp-company-name',
-                            'https://www.linkedin.com/messaging/thread/6029330728980930560',
+                            'https://www.linkedin.com/edu/?trk=nav_responsive_sub_nav_edu',
+                            'https://help.linkedin.com/app/home/',
+                            'https://www.linkedin.com/?trk=nav_logo',
                             'https://www.linkedin.com/wvmx/profile?trk=nav_responsive_sub_nav_wvmp',
-                            'https://www.linkedin.com/edu/school?id=20946&trk=prof-following-school-logo']
+                            'https://www.linkedin.com/ads/start?utm_source=li&utm_medium=el&utm_campaign=hb_tab_ads&src=li-nav&trk=nav_responsive_sub_nav_advertise']
 
         for profile in self.conData['contacts']:
 
@@ -462,8 +464,8 @@ class LinkedIn(SocialNetwork):
             try:
                 try:
                     print 'getting the profile exp', profileId
-                    workExp, country, city = self._getProfileData(profileId)
-                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic, 'city':city}
+                    workExp, country, city, rawLocation = self._getProfileData(profileId)
+                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic, 'city':city, 'linkedInLocation': rawLocation}
                     print 'ok'
                     print '### count:', count
                     count +=1

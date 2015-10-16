@@ -139,13 +139,13 @@ class LinkedInStats(object):
         newList =  []
 
         for item in flatList:
-
+            if not item: continue
             if not isinstance(item, int) and not isinstance(item, str):
                 item = unicodedata.normalize('NFKD', item).encode('ascii', 'ignore')
 
             newList.append(item)
 
         flatList = newList
-        title = flatList[0]+":"
+        title = str(flatList[0])+":"
         stringValue = ', '.join(map(str,flatList[1:]))
         fileName.write(title+' '+stringValue+'\n')
