@@ -1223,6 +1223,7 @@
     ],
     "BE": [
         "Belgium",
+        "Wallonie",
         "Brussels",
         "Ghent",
         "Antwerp",
@@ -7191,6 +7192,8 @@
     ],
     "IN": [
         "India",
+        "Kerala",
+        "Chandigarh",
         "Mumbai",
         "Gurgaon",
         "Delhi",
@@ -7536,6 +7539,7 @@
     ],
     "IT": [
         "Naples",
+        "Lombardia",
         "Italy",
         "Italia",
         "Rome",
@@ -15878,6 +15882,7 @@
     ],
     "UK": [
         "UK",
+        "Hampshire",
         "United Kingdom",
         "Great Britain",
         "Londra",
@@ -16035,6 +16040,11 @@
         "USA",
         "US",
         "United States",
+        "Mountain Home",
+        "Potlatch",
+        "Ashland",
+        "Woodland Hills",
+        "Tarzana",
         "Mission Viejo",
         "Palo Alto",
         "Orange County",

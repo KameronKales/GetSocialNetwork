@@ -106,7 +106,9 @@ class LinkedInStats(object):
             profilesData = json.load(f)
 
         for profile in profilesData:
-            country =  profilesData[profile]['country']
+            location =  profilesData[profile]['linkedInLocation']
+
+            country, city = self.link._getCountryByCity(location)
 
             if country in countries:
                 countries[country].append(profile)

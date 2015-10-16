@@ -89,6 +89,7 @@ class LinkedIn(SocialNetwork):
             city = location[0]
 
         city = re.sub(" Area", '', city)
+        city = re.sub(" Region", '', city)
         city = re.sub(" Metropolitan", '', city)
         city = re.sub(" Bay", '', city)
         city = re.sub("Greater ", '', city)
@@ -241,7 +242,7 @@ class LinkedIn(SocialNetwork):
         return positions
 
 
-    def _getProfileConnections(self, profileID, depth, maxcount, minSleep = 2):
+    def _getProfileConnections(self, profileID, depth, maxcount, minSleep = 3):
         depth -= 1
         profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
         x = 0
@@ -309,7 +310,7 @@ class LinkedIn(SocialNetwork):
             raise ValueError('{} {} is not in the contacts.'.format(name, lastname) )
 
 
-    def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1, minSleep = 2):
+    def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1, minSleep = 3):
         nameLastname = name + ' ' + lastname
         profileID = self._getProfileID(name, lastname)
         profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{} } }
@@ -321,7 +322,7 @@ class LinkedIn(SocialNetwork):
         return profileConData
 
 
-    def getAllConnections(self, fileDir, depth=0, maxcount=-1, minSleep = 2):
+    def getAllConnections(self, fileDir, depth=0, maxcount=-1, minSleep = 4):
         if not isinstance(fileDir, basestring):
             raise TypeError('{} is not a string.'.format(fileDir) )
         if not isinstance(depth, int):
