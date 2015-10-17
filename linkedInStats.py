@@ -174,7 +174,7 @@ class LinkedInStats(object):
     #
     def experienceStats(self):
         otherExp = []
-        experience = {'under 5 years': [], 'under 10 years': [], 'under 15 years': [], 'under 20 years': [], 'over 20 years': []}
+        experience = {'under 5 years': [], 'under 10 years': [], 'under 15 years': [], 'under 20 years': [], 'under 30 years': [], 'over 30 years': []}
         count = 0
         with open(self.dataBase, 'r') as f:
             dataBase = json.load(f)
@@ -200,8 +200,11 @@ class LinkedInStats(object):
             elif allYears >= 15 and allYears < 20:
                 experience['under 20 years'].append(profile)
 
-            elif allYears >= 20:
-                experience['over 20 years'].append(profile)
+            elif allYears >= 20 and allYears < 30:
+                experience['under 30 years'].append(profile)
+
+            elif allYears >= 30:
+                experience['over 30 years'].append(profile)
             else:
                 otherExp.append(profile)
 
