@@ -44,11 +44,14 @@ class WorkTime(object):
 
         self.month = months
 
-def convertDate(stringDate):
+    def getTimeInteger(self):
+        return int(self.year), int(self.month)
+
+def convertDuration(stringDate):
     """ The function converts a string date into pair of integers. """
     if not isinstance(stringDate, basestring):
         raise TypeError('{} is not a string'.format(stringDate) )
-    yearPattern = re.compile(r'[0-9](?= year)')
+    yearPattern = re.compile(r'[0-9]+(?= year)')
     year = yearPattern.search(stringDate)
 
     if year:
@@ -66,6 +69,16 @@ def convertDate(stringDate):
 
     return int(year), int(month)
 
+def findInteger(stringDate):
+    """ The function finds a numerical value and converts it to an integer. """
+    if not isinstance(stringDate, basestring):
+        raise TypeError('{} is not a string'.format(stringDate) )
+    integerPattern = re.compile(r'[0-9]+')
+    integer = integerPattern.search(stringDate)
+    if integer:
+        return int(integer.group() )
+    else:
+        raise ValueError('Could not find an integer.')
 
 
 

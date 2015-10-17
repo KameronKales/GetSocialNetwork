@@ -251,17 +251,21 @@ class LinkedIn(SocialNetwork):
         conData = []
         deepContacts = {}
         contatcs = {}
+        print '###loading profile and its connections:', profileID
 
         while(True):
+
+            print '                 ', 'offset:', offset, 'count:', x
             sleepTime = random.uniform(minSleep, minSleep*2)
             time.sleep(sleepTime)
             paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
+            print 'sleep time', sleepTime
             try:
                 profileConData = self.loadPage(profileConDataURL, paramsConnections)
                 profileConData = json.loads(profileConData)
 
             except:
-                print 'Can not load #profileID', profileID, '#offset', offset, '#x', x
+                print 'Can not load #profileID. LinkedIn could have blocked the access.', profileID, '#offset', offset, '#x', x
                 break
 
             if 'connections' not in profileConData['content'] or 'connections' not in profileConData['content']['connections']:
@@ -362,7 +366,7 @@ class LinkedIn(SocialNetwork):
             rawLocation = location
             country, city = self._getCountryByCity(location)
 
-        titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9]+')
+        titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9\'\".-|]+')
         titles = titlePattern.findall(profilePage)
 
         startTimePattern = re.compile(r'(?<=<span class=\"experience-date-locale\"><time>)[ A-z,0-9]+')
@@ -398,11 +402,11 @@ class LinkedIn(SocialNetwork):
                 duration = durationPattern.search(profilePage)
                 if duration: duration = duration.group()
 
-            companyPattern = re.compile(r'[ A-z,0-9,.,/]+(?=</a></strong></span></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+            companyPattern = re.compile(r'[ A-z,0-9,./\'\"-|\(\)]+(?=</a></strong></span></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
             company = companyPattern.search(profilePage)
 
             if not company:
-                companyPattern = re.compile(r'[ A-z,0-9,.,/]+(?=</a></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+                companyPattern = re.compile(r'[ A-z,0-9,./\'\"-|\(\)]+(?=</a></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
                 company = companyPattern.search(profilePage)
 
             if company: company = company.group()

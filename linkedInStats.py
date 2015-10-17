@@ -1,4 +1,4 @@
-import json, pprint, unicodedata, os
+import json, pprint, unicodedata, os, utils
 from socialNetwork import LinkedIn
 
 
@@ -8,11 +8,12 @@ class LinkedInStats(object):
 
         self.link = LinkedIn(login, password)
         self.selfDir = os.path.dirname(__file__)
-        self.allData = None
 
         self.companyStatsDir = os.path.join(self.selfDir, "companies stats.txt")
         self.countriesStatDir = os.path.join(self.selfDir, "countries stats.txt")
         self.positionStats = os.path.join(self.selfDir, "position stats.txt")
+        self.workOverTimeStats = os.path.join(self.selfDir, "work time stats.txt")
+        self.expYears = os.path.join(self.selfDir, "exp years stats.txt")
         self.dataBase = os.path.join(self.selfDir, "dataBase.json")
 
 
@@ -22,8 +23,8 @@ class LinkedInStats(object):
         data necessary for further statistics.The method uses time.sleep call, so betwee each
         profile query there is a user defined pause. By default the pause lasts 4 seconds.
         """
-        self.allData, errorProfiles = self.link.getAllData(self.dataBase, numberProfiles, sleepTime)
-        return self.allData, errorProfiles
+        data, errorProfiles = self.link.getAllData(self.dataBase, numberProfiles, sleepTime)
+        return data, errorProfiles
 
 
     def companyStats(self):
@@ -127,6 +128,88 @@ class LinkedInStats(object):
                 self._write(f, country, countryCount[country], countries[country])
 
             f.write('\n')
+
+    def workOverTime(self, istartYear, iendYear):
+        if not isinstance(istartYear, int) or not isinstance(iendYear, int):
+            raise TypeError('{} or {} is not integer.'.format(startYear, endYear) )
+        totalPeople = []
+        period = [year for year in xrange(istartYear, iendYear+1)]
+        workTimeStats = {}
+
+        for year in period:
+            workTimeStats[str(year)]=[]
+
+        with open(self.dataBase, 'r') as f:
+            dataBase = json.load(f)
+
+        for profile in dataBase:
+            startCareer = []
+            workExp = dataBase[profile]['workExp']
+            tressholdYear = False
+            for company in workExp:
+                startYear = utils.findInteger(workExp[company]['start'])
+                startCareer.append(startYear)
+
+                for careerYear in startCareer:
+                    if careerYear <= istartYear:
+                        tressholdYear = True
+                        break
+
+                if startYear in period and tressholdYear == True:
+                    workTimeStats[str(startYear)].append(profile)
+
+        for year in workTimeStats:
+
+            for profile in workTimeStats[year]:
+
+                if not profile in totalPeople:
+                    totalPeople.append(profile)
+
+        with open(self.workOverTimeStats, 'w') as f:
+            self._write(f,'total people', len(totalPeople) )
+            for year in sorted(workTimeStats, key=lambda x: int(x) ):
+                count = len(workTimeStats[year])
+                self._write(f, year, count, workTimeStats[year] )
+
+    #
+    def experienceStats(self):
+        otherExp = []
+        experience = {'under 5 years': [], 'under 10 years': [], 'under 15 years': [], 'under 20 years': [], 'over 20 years': []}
+        count = 0
+        with open(self.dataBase, 'r') as f:
+            dataBase = json.load(f)
+
+        for profile in dataBase:
+            years = utils.WorkTime(0,0)
+
+            for company in dataBase[profile]['workExp']:
+                year, month = utils.convertDuration(dataBase[profile]['workExp'][company]['duration'])
+                years += utils.WorkTime(year, month)
+
+            allYears, allMonths =  years.getTimeInteger()
+
+            if allYears >= 1 and allYears < 5:
+                experience['under 5 years'].append(profile)
+
+            elif allYears >= 5 and allYears < 10:
+                experience['under 10 years'].append(profile)
+
+            elif allYears >= 10 and allYears < 15:
+                experience['under 15 years'].append(profile)
+
+            elif allYears >= 15 and allYears < 20:
+                experience['under 20 years'].append(profile)
+
+            elif allYears >= 20:
+                experience['over 20 years'].append(profile)
+            else:
+                otherExp.append(profile)
+
+        with open(self.expYears, 'w') as f:
+            for exp in experience:
+                self._write(f, exp, len(experience[exp]), experience[exp])
+
+            self._write(f,'unknown', len(otherExp), otherExp)
 
 
     @staticmethod
