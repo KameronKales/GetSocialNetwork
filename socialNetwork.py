@@ -359,14 +359,14 @@ class LinkedIn(SocialNetwork):
         city = None
         country = None
         rawLocation = None
-        locationPattern = re.compile(r'(?<=name=\'location\' title=\"Find other members in )[ A-z,0-9,.]+')
+        locationPattern = re.compile(r'(?<=name=\'location\' title=\"Find other members in )[ A-z,0-9\.]+')
         location = locationPattern.search(profilePage)
         if location:
             location = location.group()
             rawLocation = location
             country, city = self._getCountryByCity(location)
 
-        titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9\'\".-|]+')
+        titlePattern = re.compile(r'(?<=title=\"Learn more about this title\">)[ &#39,A-z,0-9]+')
         titles = titlePattern.findall(profilePage)
 
         startTimePattern = re.compile(r'(?<=<span class=\"experience-date-locale\"><time>)[ A-z,0-9]+')
@@ -391,7 +391,7 @@ class LinkedIn(SocialNetwork):
             start = startTimes[startTimesSize-1-x]
             end = endTimes[startTimesSize-1-x]
             title = titles[startTimesSize-1-x]
-            durationPattern = re.compile(r'(?<='+ end + r'</time> \()[ A-z,0-9,|,/]+')
+            durationPattern = re.compile(r'(?<='+ end + r'</time> \()[ A-z,0-9,\|,\/]+')
             duration = durationPattern.search(profilePage)
 
             if duration: duration = duration.group()
@@ -402,11 +402,11 @@ class LinkedIn(SocialNetwork):
                 duration = durationPattern.search(profilePage)
                 if duration: duration = duration.group()
 
-            companyPattern = re.compile(r'[ A-z,0-9,./\'\"-|\(\)]+(?=</a></strong></span></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+            companyPattern = re.compile(r'[ A-z,0-9,&#39.]+(?=</a></strong></span></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
             company = companyPattern.search(profilePage)
 
             if not company:
-                companyPattern = re.compile(r'[ A-z,0-9,./\'\"-|\(\)]+(?=</a></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
+                companyPattern = re.compile(r'[ A-z,0-9,.]+(?=</a></h5></header><span class=\"experience-date-locale\"><time>' + start + r')')
                 company = companyPattern.search(profilePage)
 
             if company: company = company.group()
@@ -464,7 +464,7 @@ class LinkedIn(SocialNetwork):
             print 'visiting rand page'
             self.loadPage(randomPage)
 
-            sleepTime = random.uniform(minSleepTime, minSleepTime*2)
+            sleepTime = random.uniform(minSleepTime, minSleepTime*1.5)
             time.sleep(sleepTime)
             try:
                 try:
