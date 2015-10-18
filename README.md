@@ -3,7 +3,7 @@
 
 ## A framework to get data from social network. Python 2.7.10. Data: 17.10.15
 
-Currently the supported platform is LinkedIn. The framework supports only English language.
+Currently the supported platform is LinkedIn. The framework supports only English language. The module doesn't need any external libs.
 
 Usage:
 ```
