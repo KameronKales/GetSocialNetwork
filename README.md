@@ -5,7 +5,7 @@
 
 Usage:
 ```
-# initiazlie LinkedInStats class to login into the network.
+*# initiazlie LinkedInStats class to login into the network.*
 lstats = LinkedInStats('example@example.com', 'password')
 
 # first we need to create the database of all connections
