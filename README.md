@@ -38,8 +38,6 @@ profileData = l.getProfileData('Name','Lastname')
 #### The txt files created by LinkedInStats methods can be easily graphed in Excel.
 ![mystats](https://cloud.githubusercontent.com/assets/14153294/10562266/f5312988-7507-11e5-84eb-dcaa8efcf5a2.jpg)
 
-![pipeline](https://cloud.githubusercontent.com/assets/14153294/10562374/17e38434-750e-11e5-8e0e-6c99e6088267.jpg)
-
 Known bugs and restrictions.
 
 1. Sometimes, regex expressions do not grab the proper information. This results in minor inaccuracies in stats.
