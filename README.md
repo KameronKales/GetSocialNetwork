@@ -18,7 +18,7 @@ lstats = LinkedInStats('example@example.com', 'password')
 # first we need to create the database of all connections
 dataBase, errorProfiles = lstats.createDataBase(-1,4)
 
-# than we can call other methods which will operate on the created database file
+# than we can call other methods which output txt file stats.
 lstats.workOverTime(2008,2015)
 lstats.experienceStats()
 lstats.locationStats()
