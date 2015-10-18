@@ -1,5 +1,4 @@
-import datetime, math, json
-
+import datetime, math, json, re
 class WorkTime(object):
     def __init__(self, iyear, imonth):
         if not isinstance(iyear, int):
@@ -44,6 +43,43 @@ class WorkTime(object):
             raise ValueError("{} shouldn't be more than 12".format(months) )
 
         self.month = months
+
+    def getTimeInteger(self):
+        return int(self.year), int(self.month)
+
+def convertDuration(stringDate):
+    """ The function converts a string date into pair of integers. """
+    if not isinstance(stringDate, basestring):
+        raise TypeError('{} is not a string'.format(stringDate) )
+    yearPattern = re.compile(r'[0-9]+(?= year)')
+    year = yearPattern.search(stringDate)
+
+    if year:
+        year = year.group()
+    else:
+        year = 0
+
+    monthPattern = re.compile(r'[0-9](?= month)')
+    month = monthPattern.search(stringDate)
+
+    if month:
+        month = month.group()
+    else:
+        month = 0
+
+    return int(year), int(month)
+
+def findInteger(stringDate):
+    """ The function finds a numerical value and converts it to an integer. """
+    if not isinstance(stringDate, basestring):
+        raise TypeError('{} is not a string'.format(stringDate) )
+    integerPattern = re.compile(r'[0-9]+')
+    integer = integerPattern.search(stringDate)
+    if integer:
+        return int(integer.group() )
+    else:
+        raise ValueError('Could not find an integer.')
+
 
 
 class Profile(object):

@@ -46,6 +46,7 @@
         "Pyrenees"
     ],
     "AE": [
+        "United Arab Emirates",
         "Dubai",
         "Abu Dhabi",
         "Sharjah",
@@ -563,6 +564,7 @@
         "Danco Coast"
     ],
     "AR": [
+        "Argentina",
         "Buenos Aires",
         "Rosario",
         "Argentina",
@@ -672,6 +674,7 @@
         "Fatu Rock"
     ],
     "AT": [
+        "Austria",
         "Vienna",
         "Graz",
         "Salzburg",
@@ -778,6 +781,7 @@
         "Imst"
     ],
     "AU": [
+        "Australia",
         "Melbourne",
         "South Melbourne",
         "Brisbane",
@@ -914,6 +918,7 @@
         "Saltvik"
     ],
     "AZ": [
+        "Azerbaijan",
         "Baku",
         "Ganja",
         "Sumqayit",
@@ -1119,6 +1124,7 @@
         "Conset Bay"
     ],
     "BD": [
+        "Bangladesh",
         "Dhaka",
         "Chittagong",
         "Khulna",
@@ -1216,6 +1222,8 @@
         "Pirojpur"
     ],
     "BE": [
+        "Belgium",
+        "Wallonie",
         "Brussels",
         "Ghent",
         "Antwerp",
@@ -2505,8 +2513,9 @@
         "Independence"
     ],
     "CA": [
+        "Canada",
         "North Vancouver",
-        "Region de Montreal", 
+        "Region de Montreal",
         "Montreal",
         "Toronto",
         "Ottawa",
@@ -2919,6 +2928,7 @@
         "Madingo-Kayes"
     ],
     "CH": [
+        "Switzerland",
         "Bern",
         "Zurich",
         "Geneva",
@@ -3355,6 +3365,7 @@
         "Lebialem"
     ],
     "CN": [
+        "China",
         "Beijing",
         "Shanghai",
         "Tianjin",
@@ -7180,6 +7191,9 @@
         "Calf Sound"
     ],
     "IN": [
+        "India",
+        "Kerala",
+        "Chandigarh",
         "Mumbai",
         "Gurgaon",
         "Delhi",
@@ -7524,6 +7538,10 @@
         "Neskaupstadur"
     ],
     "IT": [
+        "Naples",
+        "Lombardia",
+        "Italy",
+        "Italia",
         "Rome",
         "Roma",
         "Palermo",
@@ -7766,6 +7784,7 @@
         "Marw"
     ],
     "JP": [
+        "Japan",
         "Tokyo",
         "Yokohama",
         "Sapporo",
@@ -8552,6 +8571,7 @@
         "Carribean"
     ],
     "KZ": [
+        "Kazakhstan",
         "Astana",
         "Almaty",
         "Taraz",
@@ -10618,6 +10638,7 @@
         "Chitipa"
     ],
     "MX": [
+        "Mexico",
         "Mexico City",
         "Guadalajara",
         "Iztapalapa",
@@ -11719,7 +11740,8 @@
         "Polynesia"
     ],
     "NZ": [
-        "Wellington & Wairarapa",
+        "New Zealand",
+        "Wellington &amp; Wairarapa",
         "Wellington",
         "Auckland",
         "Christchurch",
@@ -12938,6 +12960,8 @@
         "Negotin"
     ],
     "RU": [
+        "Russian Federation",
+        "Russia",
         "Moscow",
         "Samara",
         "Yekaterinburg",
@@ -13422,6 +13446,7 @@
         "Red Sea"
     ],
     "SE": [
+        "Sweden",
         "Stockholm",
         "Varnamo",
         "Gothenburg",
@@ -14657,6 +14682,7 @@
         "Sandiado"
     ],
     "TH": [
+        "Thailand",
         "Bangkok",
         "Udon Thani",
         "Thailand",
@@ -15134,6 +15160,7 @@
         "Metis Shoal"
     ],
     "TR": [
+        "Turkey",
         "Ankara",
         "Izmir",
         "Bursa",
@@ -15602,6 +15629,7 @@
         "Nkoaranga"
     ],
     "UA": [
+        "Ukraine",
         "Kyiv",
         "Donetsk",
         "Dnipropetrovsk",
@@ -15853,6 +15881,10 @@
         "Bugembe"
     ],
     "UK": [
+        "UK",
+        "Hampshire",
+        "United Kingdom",
+        "Great Britain",
         "Londra",
         "Newcastle upon Tyne",
         "London",
@@ -16005,6 +16037,14 @@
         "Navassa Island"
     ],
     "US": [
+        "USA",
+        "US",
+        "United States",
+        "Mountain Home",
+        "Potlatch",
+        "Ashland",
+        "Woodland Hills",
+        "Tarzana",
         "Mission Viejo",
         "Palo Alto",
         "Orange County",
@@ -16912,6 +16952,7 @@
         "Kavani"
     ],
     "ZA": [
+        "South Africa",
         "Pretoria",
         "Durban",
         "Johannesburg",
