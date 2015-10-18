@@ -35,7 +35,7 @@ link = LinkedIn('example@example.com','password')
 profileData = l.getProfileData('Name','Lastname')
 ```
 
-Known bugs and restricctions.
+Known bugs and restrictions.
 
 1. Sometimes, regex expressions do not grab the proper information. This results in minor inaccuracies in stats.
 2. Languages other than English are not supported. Thus, the profiles which use other languages may cause errors.
