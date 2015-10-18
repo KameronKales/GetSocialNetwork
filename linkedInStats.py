@@ -183,7 +183,11 @@ class LinkedInStats(object):
             years = utils.WorkTime(0,0)
 
             for company in dataBase[profile]['workExp']:
-                year, month = utils.convertDuration(dataBase[profile]['workExp'][company]['duration'])
+                duration = dataBase[profile]['workExp'][company]['duration']
+
+                if not duration: continue
+
+                year, month = utils.convertDuration(duration)
                 years += utils.WorkTime(year, month)
 
             allYears, allMonths =  years.getTimeInteger()
