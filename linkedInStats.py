@@ -130,6 +130,7 @@ class LinkedInStats(object):
             f.write('\n')
 
     def workOverTime(self, istartYear, iendYear):
+        """ The method displays how many people swtiched their jobs during the user specified period."""
         if not isinstance(istartYear, int) or not isinstance(iendYear, int):
             raise TypeError('{} or {} is not integer.'.format(startYear, endYear) )
         totalPeople = []
@@ -173,6 +174,7 @@ class LinkedInStats(object):
 
     #
     def experienceStats(self):
+        """ The method sorts profiles according to their experience and outputs the results as txt file. """
         otherExp = []
         experience = {'under 5 years': [], 'under 10 years': [], 'under 15 years': [], 'under 20 years': [], 'under 30 years': [], 'over 30 years': []}
         count = 0
