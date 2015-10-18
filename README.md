@@ -34,6 +34,8 @@ link = LinkedIn('example@example.com','password')
 # Get profile data by specifying name and lastname.
 profileData = l.getProfileData('Name','Lastname')
 ```
+## The txt files created by LinkedInStats methods can be easily graphed in Excel.
+![mystats](https://cloud.githubusercontent.com/assets/14153294/10562266/f5312988-7507-11e5-84eb-dcaa8efcf5a2.jpg)
 
 Known bugs and restrictions.
 
