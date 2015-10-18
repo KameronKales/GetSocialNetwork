@@ -3,11 +3,11 @@
 
 ## A framework to get data from social network. Python 2.7.10. Data: 17.10.15
 
-Currently the supported platform is LinkedIn. The app supports only English language.
+Currently the supported platform is LinkedIn. The framework supports only English language.
 
 Usage:
 ```
-# import necessary libraries. No external libs needed.
+# import all project libraries.
 from linkedInStats import LinkedInStats
 from socialNetwork import LinkedIn
 import utils
@@ -35,3 +35,7 @@ link = LinkedIn('example@example.com','password')
 profileData = l.getProfileData('Name','Lastname')
 ```
 
+Known bugs and restricctions.
+1. Sometimes, regex expressions do not grab the proper information. This results in minor inaccuracies in stats.
+2. Languages other than English are not supported. Thus, the profiles which use other languages may cause errors.
+3. The speed of scraping is deliberately limited, so LinkedIn don't think it is a bad bot.
