@@ -1,7 +1,7 @@
 # GetSocialNetwork
 ![getsocialnetwork](https://cloud.githubusercontent.com/assets/14153294/10562118/923f4574-74ff-11e5-8288-c93f1d34c08e.jpg)
 
-## A framework to get data from social network. Python 2.7.10. Data: 17.10.15
+## A framework to get data from a social network. Python 2.7.10. Data: 17.10.15
 
 Currently the supported platform is LinkedIn. The framework supports only English language. The module doesn't need any external libs.
 
