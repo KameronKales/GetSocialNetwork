@@ -17,7 +17,7 @@ lstats = LinkedInStats('example@example.com', 'password')
 # first we need to create the database of all connections. The dataBase.json file will be saved in the root of the module.
 dataBase, errorProfiles = lstats.createDataBase(-1,4)
 
-# than we can call other methods which output txt file stats in the root of the module.
+# then we can call other methods which output txt file stats in the root of the module.
 lstats.workOverTime(2008,2015)
 lstats.experienceStats()
 lstats.locationStats()
