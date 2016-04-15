@@ -4,7 +4,7 @@ import unicodedata
 
 
 class SocialNetwork(object):
-    """ A base class to login and load pages """
+    """A base class to login and load pages."""
     def __init__(self, login, password, startURL, loginURL):
         self.login = login
         self.password = password
@@ -42,7 +42,7 @@ class SocialNetwork(object):
 
 
     def loginPage(self):
-        """ starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf """
+        """Starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf."""
         loginPage = self.loadPage(self.start_url)
         csrfMatch = re.compile(r'(?<=id="loginCsrfParam-login" type="hidden" value=")[A-z,0-9,-]+')
         csrf = csrfMatch.search(loginPage).group()
@@ -56,6 +56,7 @@ class SocialNetwork(object):
 
 
 class LinkedIn(SocialNetwork):
+    """The class that logins and reads a user's profile connection data."""
     def __init__(self, login, password):
         self.login = login
         self.password = password
@@ -70,13 +71,14 @@ class LinkedIn(SocialNetwork):
 
 
     def getNumCons(self):
+        """Parse the user's web page and get the number of connections"""
         numCon = re.search(r'\"numConnections\":\d+', self.homePage)
         number = numCon.group().split(':')[1]
         return number
 
 
     def _getCountryByCity(self, location):
-        """ A helper function which finds countires by an area or city """
+        """A helper function which finds countires by an area or city."""
         city = None
         country = None
         location =  location.split(',')
@@ -258,8 +260,9 @@ class LinkedIn(SocialNetwork):
 
 
     def _getProfileConnections(self, profileID, depth, maxcount, minSleep = 3):
-        """ A lower level recursive method that requests a json of visible
-        connections of N level connection
+        """A lower level recursive method that requests a json file of the first level
+        contacts. The method would recursively grab N level connection if depth is more
+        than 0
         """
         depth -= 1
         profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
@@ -319,7 +322,7 @@ class LinkedIn(SocialNetwork):
 
 
     def _getProfileID(self, name, lastname):
-        """ Get the profile id from self.conData """
+        """Get the profile id from self.conData """
 
         if not isinstance(name, basestring) or not isinstance(lastname, basestring):
             raise TypeError('{} or {} is not a string'.format(name, lastname) )
@@ -338,7 +341,7 @@ class LinkedIn(SocialNetwork):
 
 
     def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1, minSleep = 3):
-        """ A wraper method arround _getProfileConnections method.
+        """A wraper method arround _getProfileConnections method.
         The method writes a json file where each contact has a tree of n level connections.
         """
         nameLastname = name + ' ' + lastname
@@ -353,6 +356,9 @@ class LinkedIn(SocialNetwork):
 
 
     def getAllConnections(self, fileDir, depth=0, maxcount=-1, minSleep = 4):
+        """The method would iterate through all the user's contacts and get all their
+        contatcs and create a json tree
+        """
         if not isinstance(fileDir, basestring):
             raise TypeError('{} is not a string.'.format(fileDir) )
         if not isinstance(depth, int):
@@ -379,6 +385,9 @@ class LinkedIn(SocialNetwork):
         return connectionsTree
 
     def _getProfileData(self, profileID):
+        """The lower level method that parses the webpage for more detailed information."""
+
+        # TODO This method should be brough offline and all parsing should go offline from the local hard drive
 
         profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+str(profileID)
         profilePage = self.loadPage(profileURL)
@@ -388,6 +397,7 @@ class LinkedIn(SocialNetwork):
         rawLocation = None
         locationPattern = re.compile(r'(?<=name=\'location\' title=\"Find other members in )[ A-z,0-9\.]+')
         location = locationPattern.search(profilePage)
+
         if location:
             location = location.group()
             rawLocation = location
