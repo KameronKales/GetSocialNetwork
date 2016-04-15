@@ -141,6 +141,7 @@ class LinkedIn(SocialNetwork):
         return conData #return a dictionary
 
     def getPeopleAtCompanies(self):
+        """ Get companies of the profile contacts """
         conData = self.conData
         companies = {}
         for person in conData['contacts']:
