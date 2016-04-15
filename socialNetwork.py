@@ -42,9 +42,7 @@ class SocialNetwork(object):
 
 
     def loginPage(self):
-        """
-        starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf
-        """
+        """ starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf """
         loginPage = self.loadPage(self.start_url)
         csrfMatch = re.compile(r'(?<=id="loginCsrfParam-login" type="hidden" value=")[A-z,0-9,-]+')
         csrf = csrfMatch.search(loginPage).group()
@@ -70,6 +68,7 @@ class LinkedIn(SocialNetwork):
         self.num_con = self.getNumCons()
         self.conData = self.getConnections()
 
+
     def getNumCons(self):
         numCon = re.search(r'\"numConnections\":\d+', self.homePage)
         number = numCon.group().split(':')[1]
@@ -77,6 +76,7 @@ class LinkedIn(SocialNetwork):
 
 
     def _getCountryByCity(self, location):
+        """ A helper function which finds countires by an area or city """
         city = None
         country = None
         location =  location.split(',')
@@ -110,25 +110,26 @@ class LinkedIn(SocialNetwork):
         else:
             return 'Unresolved place', city
 
+
     def loadCountryDict(self):
         script_dir = os.path.dirname(__file__)
         file_dir = 'countryCity.json'
-        absolute_dir = os.path.join(script_dir,file_dir)
-        f = file(absolute_dir,'r')
-        countryDict = json.load(f)
-        f.close()
+        absolute_dir = os.path.join(script_dir, file_dir)
+
+        with open(absolute_dir, 'r') as f:
+            countryDict = json.load(f)
+
         return countryDict
 
 
     def getConnections(self):
-        """
-        get the list of all connections
-        """
+        """ Get the list of all connections """
         params = {'start' : 0,
                   'count' : self.num_con, #TODO replace with self.num_con
                   'fields': 'id,name,first_name,last_name,company,title,geo_location,tags,emails,sources,display_sources,last_interaction,secure_profile_image_url',
                   'sort'  : '-last_interaction',
                   '_'     : '1440213783954'}
+
         params = urllib.urlencode(params)
         connectionsPage = self.loadPage(self.con_url+params)
         conData = json.loads(connectionsPage)
@@ -141,13 +142,16 @@ class LinkedIn(SocialNetwork):
         return conData #return a dictionary
 
     def getPeopleAtCompanies(self):
-        """ Get companies of the profile contacts """
+        """ Generate a dictionary of comanies and people that work at the companies. """
+
         conData = self.conData
         companies = {}
+
         for person in conData['contacts']:
 
             if person['company']:
                 company = person['company']['id']
+
                 if company in companies:
                     companies[company].append(person['first_name']+' '+person['last_name'])
 
@@ -158,13 +162,17 @@ class LinkedIn(SocialNetwork):
 
 
     def quickGetCountries(self):
+        """ Identify a contact's country using the data in self.conData """
+
         countries = {'Unspecified':{'unspecified city':[]} }
 
         count = 0
+
         for person in self.conData['contacts']:
             name = unicodedata.normalize('NFKD', person['first_name']).encode('ascii','ignore')
             lastname = unicodedata.normalize('NFKD', person['last_name']).encode('ascii','ignore')
             personNameLastName = '{} {}'.format(name, lastname)
+
             if person['geo_location']:
                 location = person['geo_location']['name']
 
@@ -187,7 +195,7 @@ class LinkedIn(SocialNetwork):
 
 
     def getPosition(self):
-
+        """ Get a contact's occupation from self.conData """
         def _positionMatch(extendedTitle, positions):
             if not isinstance(extendedTitle, list):
                 raise TypeError('{} is not a list'.format(extendedTitle) )
@@ -213,10 +221,12 @@ class LinkedIn(SocialNetwork):
             n = unicodedata.normalize('NFKD',person['first_name']).encode('ascii','ignore')
             l = unicodedata.normalize('NFKD',person['last_name']).encode('ascii','ignore')
             personNameLastname = n+' '+l
+
             if person['title']:
                 title = unicodedata.normalize('NFKD',person['title']).encode('ascii','ignore')
                 title = title.split(' ')
                 extendedTitle = []
+
                 for word in title:
                     word = word.lower().split('/')
                     extendedTitle.extend(word)
@@ -224,15 +234,19 @@ class LinkedIn(SocialNetwork):
                 if 'owner' in extendedTitle:
                     positions['owner'].append(personNameLastname)
                     continue
+
                 elif 'supervisor' in extendedTitle:
                     positions['supervisor'].append(personNameLastname)
                     continue
+
                 elif 'senior' in extendedTitle:
                     positions['senior'].append(personNameLastname)
                     continue
+
                 elif 'lead' in extendedTitle:
                     positions['lead'].append(personNameLastname)
                     continue
+
                 else:
                     position = _positionMatch(extendedTitle, positions)
                     positions[position].append(personNameLastname)
@@ -244,6 +258,9 @@ class LinkedIn(SocialNetwork):
 
 
     def _getProfileConnections(self, profileID, depth, maxcount, minSleep = 3):
+        """ A lower level recursive method that requests a json of visible
+        connections of N level connection
+        """
         depth -= 1
         profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
         x = 0
@@ -256,11 +273,13 @@ class LinkedIn(SocialNetwork):
 
         while(True):
 
-            print '                 ', 'offset:', offset, 'count:', x
+            print 'offset:', offset, 'count:', x
             sleepTime = random.uniform(minSleep, minSleep*2)
             time.sleep(sleepTime)
+
             paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
             print 'sleep time', sleepTime
+
             try:
                 profileConData = self.loadPage(profileConDataURL, paramsConnections)
                 profileConData = json.loads(profileConData)
@@ -289,10 +308,10 @@ class LinkedIn(SocialNetwork):
 
             if len(name)==1:
                 contact = {'first_name': name[0], 'last_name': '', 'id': memberID, 'profile connections': deepContacts }
+
             else:
                 contact = {'first_name': name[0], 'last_name': name[1], 'id': memberID, 'profile connections': deepContacts }
 
-            # nameLastname = '{} {}'.format(contact['first_name'], contact['last_name'])
             nameLastname = contact['first_name'] + ' ' + contact['last_name']
             contatcs[nameLastname] = contact
 
@@ -300,10 +319,13 @@ class LinkedIn(SocialNetwork):
 
 
     def _getProfileID(self, name, lastname):
+        """ Get the profile id from self.conData """
+
         if not isinstance(name, basestring) or not isinstance(lastname, basestring):
             raise TypeError('{} or {} is not a string'.format(name, lastname) )
 
         profileID = 0
+
         for profile in self.conData['contacts']:
 
             if name == profile['first_name'] and lastname == profile['last_name']:
@@ -316,6 +338,9 @@ class LinkedIn(SocialNetwork):
 
 
     def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1, minSleep = 3):
+        """ A wraper method arround _getProfileConnections method.
+        The method writes a json file where each contact has a tree of n level connections.
+        """
         nameLastname = name + ' ' + lastname
         profileID = self._getProfileID(name, lastname)
         profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{} } }
@@ -334,6 +359,7 @@ class LinkedIn(SocialNetwork):
             raise TypeError('{} is not an integer'.format(depth) )
 
         connectionsTree = {}
+
         for profile in self.conData['contacts']:
             profileID = profile['id'][3:]
             # nameLastname = '{} {}'.format(profile['first_name'], profile['last_name'])
@@ -467,7 +493,9 @@ class LinkedIn(SocialNetwork):
 
             sleepTime = random.uniform(minSleepTime, minSleepTime*1.5)
             time.sleep(sleepTime)
+
             try:
+
                 try:
                     print 'getting the profile exp', profileId
                     workExp, country, city, rawLocation = self._getProfileData(profileId)
@@ -475,10 +503,12 @@ class LinkedIn(SocialNetwork):
                     print 'ok'
                     print '### count:', count
                     count +=1
+
                 except IOError:
                     print 'could not get the profile exp', profileId
                     print '!!! count', count
                     break
+
             except:
                 errorProfiles.append(profileId)
                 print '____ skipping profile', profileId
