@@ -4,7 +4,7 @@ import unicodedata
 
 
 class SocialNetwork(object):
-    """ A base class to login and load pages """
+    """A base class to login and load pages."""
     def __init__(self, login, password, startURL, loginURL):
         self.login = login
         self.password = password
@@ -42,9 +42,7 @@ class SocialNetwork(object):
 
 
     def loginPage(self):
-        """
-        starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf
-        """
+        """Starts with the homepage to obtain the csrf, once its done logins using login, pass and csrf."""
         loginPage = self.loadPage(self.start_url)
         csrfMatch = re.compile(r'(?<=id="loginCsrfParam-login" type="hidden" value=")[A-z,0-9,-]+')
         csrf = csrfMatch.search(loginPage).group()
@@ -58,6 +56,7 @@ class SocialNetwork(object):
 
 
 class LinkedIn(SocialNetwork):
+    """The class that logins and reads a user's profile connection data."""
     def __init__(self, login, password):
         self.login = login
         self.password = password
@@ -68,15 +67,21 @@ class LinkedIn(SocialNetwork):
         self.homePage = self.loginPage()
         self.countryDict = self.loadCountryDict()
         self.num_con = self.getNumCons()
-        self.conData = self.getConnections()
+        self.conUrls = self.getAllContacsJson()     # api2 json file which contains urls and all contacts info
+        self.conData = self.getConnections()        # api1 json file contains contatcs info but no urls
+        self.currentPath = os.path.dirname(os.path.abspath(__file__))
+
+
 
     def getNumCons(self):
+        """Parse the user's web page and get the number of connections"""
         numCon = re.search(r'\"numConnections\":\d+', self.homePage)
         number = numCon.group().split(':')[1]
         return number
 
 
     def _getCountryByCity(self, location):
+        """A helper function which finds countires by an area or city."""
         city = None
         country = None
         location =  location.split(',')
@@ -110,25 +115,26 @@ class LinkedIn(SocialNetwork):
         else:
             return 'Unresolved place', city
 
+
     def loadCountryDict(self):
         script_dir = os.path.dirname(__file__)
         file_dir = 'countryCity.json'
-        absolute_dir = os.path.join(script_dir,file_dir)
-        f = file(absolute_dir,'r')
-        countryDict = json.load(f)
-        f.close()
+        absolute_dir = os.path.join(script_dir, file_dir)
+
+        with open(absolute_dir, 'r') as f:
+            countryDict = json.load(f)
+
         return countryDict
 
 
     def getConnections(self):
-        """
-        get the list of all connections
-        """
+        """ Get the list of all connections """
         params = {'start' : 0,
                   'count' : self.num_con, #TODO replace with self.num_con
                   'fields': 'id,name,first_name,last_name,company,title,geo_location,tags,emails,sources,display_sources,last_interaction,secure_profile_image_url',
                   'sort'  : '-last_interaction',
                   '_'     : '1440213783954'}
+
         params = urllib.urlencode(params)
         connectionsPage = self.loadPage(self.con_url+params)
         conData = json.loads(connectionsPage)
@@ -141,12 +147,16 @@ class LinkedIn(SocialNetwork):
         return conData #return a dictionary
 
     def getPeopleAtCompanies(self):
+        """ Generate a dictionary of comanies and people that work at the companies. """
+
         conData = self.conData
         companies = {}
+
         for person in conData['contacts']:
 
             if person['company']:
                 company = person['company']['id']
+
                 if company in companies:
                     companies[company].append(person['first_name']+' '+person['last_name'])
 
@@ -157,13 +167,17 @@ class LinkedIn(SocialNetwork):
 
 
     def quickGetCountries(self):
+        """ Identify a contact's country using the data in self.conData """
+
         countries = {'Unspecified':{'unspecified city':[]} }
 
         count = 0
+
         for person in self.conData['contacts']:
             name = unicodedata.normalize('NFKD', person['first_name']).encode('ascii','ignore')
             lastname = unicodedata.normalize('NFKD', person['last_name']).encode('ascii','ignore')
             personNameLastName = '{} {}'.format(name, lastname)
+
             if person['geo_location']:
                 location = person['geo_location']['name']
 
@@ -186,7 +200,7 @@ class LinkedIn(SocialNetwork):
 
 
     def getPosition(self):
-
+        """ Get a contact's occupation from self.conData """
         def _positionMatch(extendedTitle, positions):
             if not isinstance(extendedTitle, list):
                 raise TypeError('{} is not a list'.format(extendedTitle) )
@@ -212,10 +226,12 @@ class LinkedIn(SocialNetwork):
             n = unicodedata.normalize('NFKD',person['first_name']).encode('ascii','ignore')
             l = unicodedata.normalize('NFKD',person['last_name']).encode('ascii','ignore')
             personNameLastname = n+' '+l
+
             if person['title']:
                 title = unicodedata.normalize('NFKD',person['title']).encode('ascii','ignore')
                 title = title.split(' ')
                 extendedTitle = []
+
                 for word in title:
                     word = word.lower().split('/')
                     extendedTitle.extend(word)
@@ -223,15 +239,19 @@ class LinkedIn(SocialNetwork):
                 if 'owner' in extendedTitle:
                     positions['owner'].append(personNameLastname)
                     continue
+
                 elif 'supervisor' in extendedTitle:
                     positions['supervisor'].append(personNameLastname)
                     continue
+
                 elif 'senior' in extendedTitle:
                     positions['senior'].append(personNameLastname)
                     continue
+
                 elif 'lead' in extendedTitle:
                     positions['lead'].append(personNameLastname)
                     continue
+
                 else:
                     position = _positionMatch(extendedTitle, positions)
                     positions[position].append(personNameLastname)
@@ -243,6 +263,10 @@ class LinkedIn(SocialNetwork):
 
 
     def _getProfileConnections(self, profileID, depth, maxcount, minSleep = 3):
+        """A lower level recursive method that requests a json file of the first level
+        contacts. The method would recursively grab N level connection if depth is more
+        than 0
+        """
         depth -= 1
         profileConDataURL = 'https://www.linkedin.com/profile/profile-v2-connections?'
         x = 0
@@ -255,11 +279,13 @@ class LinkedIn(SocialNetwork):
 
         while(True):
 
-            print '                 ', 'offset:', offset, 'count:', x
+            print 'offset:', offset, 'count:', x
             sleepTime = random.uniform(minSleep, minSleep*2)
             time.sleep(sleepTime)
+
             paramsConnections = {'id': profileID, 'offset': offset, 'count': 10, 'distance': 1, 'type': 'ALL', '_': x }
             print 'sleep time', sleepTime
+
             try:
                 profileConData = self.loadPage(profileConDataURL, paramsConnections)
                 profileConData = json.loads(profileConData)
@@ -288,10 +314,10 @@ class LinkedIn(SocialNetwork):
 
             if len(name)==1:
                 contact = {'first_name': name[0], 'last_name': '', 'id': memberID, 'profile connections': deepContacts }
+
             else:
                 contact = {'first_name': name[0], 'last_name': name[1], 'id': memberID, 'profile connections': deepContacts }
 
-            # nameLastname = '{} {}'.format(contact['first_name'], contact['last_name'])
             nameLastname = contact['first_name'] + ' ' + contact['last_name']
             contatcs[nameLastname] = contact
 
@@ -299,10 +325,13 @@ class LinkedIn(SocialNetwork):
 
 
     def _getProfileID(self, name, lastname):
+        """Get the profile id from self.conData """
+
         if not isinstance(name, basestring) or not isinstance(lastname, basestring):
             raise TypeError('{} or {} is not a string'.format(name, lastname) )
 
         profileID = 0
+
         for profile in self.conData['contacts']:
 
             if name == profile['first_name'] and lastname == profile['last_name']:
@@ -315,6 +344,9 @@ class LinkedIn(SocialNetwork):
 
 
     def getProfileConnections(self, name, lastname, fileDir, depth=0, maxcount=-1, minSleep = 3):
+        """A wraper method arround _getProfileConnections method.
+        The method writes a json file where each contact has a tree of n level connections.
+        """
         nameLastname = name + ' ' + lastname
         profileID = self._getProfileID(name, lastname)
         profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{} } }
@@ -327,12 +359,16 @@ class LinkedIn(SocialNetwork):
 
 
     def getAllConnections(self, fileDir, depth=0, maxcount=-1, minSleep = 4):
+        """The method would iterate through all the user's contacts and get all their
+        contatcs and create a json tree
+        """
         if not isinstance(fileDir, basestring):
             raise TypeError('{} is not a string.'.format(fileDir) )
         if not isinstance(depth, int):
             raise TypeError('{} is not an integer'.format(depth) )
 
         connectionsTree = {}
+
         for profile in self.conData['contacts']:
             profileID = profile['id'][3:]
             # nameLastname = '{} {}'.format(profile['first_name'], profile['last_name'])
@@ -351,16 +387,63 @@ class LinkedIn(SocialNetwork):
 
         return connectionsTree
 
-    def _getProfileData(self, profileID):
 
-        profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+str(profileID)
-        profilePage = self.loadPage(profileURL)
-        # profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
+    def getAllContacsJson(self):
+        """ This function requests a json file which has all contatcs info including a contcats' page links.
+        The request uses a new linkedin api
+        """
+        jsonURL = 'https://www.linkedin.com/connected/api/v2/contacts?start=0&count={}&fields=id'.format(self.num_con)
+
+        try:
+            jsonData = self.loadPage(jsonURL)
+
+        except:
+            print 'could not request the json file.'
+
+        jsonData = json.loads(jsonData)
+        contactUrls = {i['name']: i['profileUrl'] for i in jsonData['values']}
+
+        return contactUrls
+
+
+    def downloadContactPages(self):
+        """This method writes the contacts' pages to the drive for further processing."""
+        profilesFolder ='profilesPages/'
+        fullDir = os.path.join(self.currentPath, profilesFolder)
+
+        # Check if the dir exists if not create a new one
+        if not os.path.exists(fullDir):
+            os.makedirs(fullDir)
+
+        profilePage = ''
+
+        # For name and its url, try to load the page and write it on the drive
+        for name, url in self.conUrls.items():
+
+            try:
+                profilePage = self.loadPage(url)
+
+            except IOError:
+                print 'failed to load {} page'.format(name)
+                continue
+
+            if profilePage != '':
+                with open(fullDir + name + '.html', 'w') as f:
+                    f.write(profilePage)
+
+
+    def parseContactPage(self, pageDir):
+        """The lower level method that parses a contact's webpage for extracting more detailed information."""
+        profilePage = ''
+        with open(pageDir, 'r') as f:
+            profilePage = f.read()
+
         city = None
         country = None
         rawLocation = None
         locationPattern = re.compile(r'(?<=name=\'location\' title=\"Find other members in )[ A-z,0-9\.]+')
         location = locationPattern.search(profilePage)
+
         if location:
             location = location.group()
             rawLocation = location
@@ -416,74 +499,72 @@ class LinkedIn(SocialNetwork):
         return workExp, country, city, rawLocation
 
 
-    def getProfileData(self, name, lastname):
-        profileId = self._getProfileID(name, lastname)
-        workExp, country, city, rawLocation = self._getProfileData(profileId)
-        return workExp, country, city, rawLocation
-
-
-    def getAllData(self, fileDir, numberProfiles=-1, minSleepTime=4):
-
-        workExp = {}
-        errorProfiles = []
-        count = 0
-        profilesExp = {}
-        # if the the there was previous use of the method, the method will look for a file to update the initial dict
-        if os.path.exists(fileDir):
-            with open(fileDir,'r') as f:
-                profilesExp = json.load(f)
-        # random linkedin links
-        userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
-                            'https://www.linkedin.com/home?trk=nav_responsive_tab_home',
-                            'https://www.linkedin.com/premium/products?trk=nav_responsive_sub_nav_upgrade',
-                            'https://www.linkedin.com/people/pymk/hub?trk=hp-identity-connections',
-                            'https://www.linkedin.com/job/home?trk=nav_responsive_sub_nav_jobs',
-                            'https://www.linkedin.com/edu/?trk=nav_responsive_sub_nav_edu',
-                            'https://help.linkedin.com/app/home/',
-                            'https://www.linkedin.com/?trk=nav_logo',
-                            'https://www.linkedin.com/wvmx/profile?trk=nav_responsive_sub_nav_wvmp',
-                            'https://www.linkedin.com/ads/start?utm_source=li&utm_medium=el&utm_campaign=hb_tab_ads&src=li-nav&trk=nav_responsive_sub_nav_advertise']
-
-        for profile in self.conData['contacts']:
-
-            if count >= numberProfiles and numberProfiles != -1:
-                break
-            profilePic = profile['secure_profile_image_url']
-            profileId = int(profile['id'][3:])
-            nameLastname = profile['first_name'] + ' ' + profile['last_name']
-            #skip the profiles which are in the dictionary profilesExp
-            if nameLastname in profilesExp:
-                print 'skiping profile', profilesExp[nameLastname]['id']
-                continue
-
-            sleepTime = random.uniform(minSleepTime, minSleepTime*2)
-            time.sleep(sleepTime)
-            print sleepTime
-            randomPage = random.choice(userBehaviorUrls)
-
-            print 'visiting rand page'
-            self.loadPage(randomPage)
-
-            sleepTime = random.uniform(minSleepTime, minSleepTime*1.5)
-            time.sleep(sleepTime)
-            try:
-                try:
-                    print 'getting the profile exp', profileId
-                    workExp, country, city, rawLocation = self._getProfileData(profileId)
-                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic, 'city':city, 'linkedInLocation': rawLocation}
-                    print 'ok'
-                    print '### count:', count
-                    count +=1
-                except IOError:
-                    print 'could not get the profile exp', profileId
-                    print '!!! count', count
-                    break
-            except:
-                errorProfiles.append(profileId)
-                print '____ skipping profile', profileId
-                continue
-
-        with open(fileDir,'w') as f:
-            json.dump(profilesExp, f, indent=4, sort_keys=True)
-
-        return profilesExp, errorProfiles
+    # def getAllContatcsData(self, fileDir, numberProfiles=-1, minSleepTime=3):
+    #
+    #     workExp = {}
+    #     errorProfiles = []
+    #     count = 0
+    #     profilesExp = {}
+    #     # if the the there was previous use of the method, the method will look for a file to update the initial dict
+    #     if os.path.exists(fileDir):
+    #         with open(fileDir,'r') as f:
+    #             profilesExp = json.load(f)
+    #     # random linkedin links
+    #     userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
+    #                         'https://www.linkedin.com/home?trk=nav_responsive_tab_home',
+    #                         'https://www.linkedin.com/premium/products?trk=nav_responsive_sub_nav_upgrade',
+    #                         'https://www.linkedin.com/people/pymk/hub?trk=hp-identity-connections',
+    #                         'https://www.linkedin.com/job/home?trk=nav_responsive_sub_nav_jobs',
+    #                         'https://www.linkedin.com/edu/?trk=nav_responsive_sub_nav_edu',
+    #                         'https://help.linkedin.com/app/home/',
+    #                         'https://www.linkedin.com/?trk=nav_logo',
+    #                         'https://www.linkedin.com/wvmx/profile?trk=nav_responsive_sub_nav_wvmp',
+    #                         'https://www.linkedin.com/ads/start?utm_source=li&utm_medium=el&utm_campaign=hb_tab_ads&src=li-nav&trk=nav_responsive_sub_nav_advertise']
+    #
+    #     for profile in self.conData['contacts']:
+    #
+    #         if count >= numberProfiles and numberProfiles != -1:
+    #             break
+    #         profilePic = profile['secure_profile_image_url']
+    #         profileId = int(profile['id'][3:])
+    #         nameLastname = profile['first_name'] + ' ' + profile['last_name']
+    #         #skip the profiles which are in the dictionary profilesExp
+    #         if nameLastname in profilesExp:
+    #             print 'skiping profile', profilesExp[nameLastname]['id']
+    #             continue
+    #
+    #         sleepTime = random.uniform(minSleepTime, minSleepTime)
+    #         time.sleep(sleepTime)
+    #         print sleepTime
+    #         randomPage = random.choice(userBehaviorUrls)
+    #
+    #         print 'visiting rand page'
+    #         self.loadPage(randomPage)
+    #
+    #         sleepTime = random.uniform(minSleepTime, minSleepTime)
+    #         time.sleep(sleepTime)
+    #
+    #         try:
+    #
+    #             try:
+    #                 print 'getting the profile exp', profileId
+    #                 workExp, country, city, rawLocation = self.parseContactPage(self.profileUrls)
+    #                 profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic, 'city':city, 'linkedInLocation': rawLocation}
+    #                 print 'ok'
+    #                 print '### count:', count
+    #                 count +=1
+    #
+    #             except IOError:
+    #                 print 'could not get the profile exp', profileId
+    #                 print '!!! count', count
+    #                 break
+    #
+    #         except:
+    #             errorProfiles.append(profileId)
+    #             print '____ skipping profile', profileId
+    #             continue
+    #
+    #     with open(fileDir,'w') as f:
+    #         json.dump(profilesExp, f, indent=4, sort_keys=True)
+    #
+    #     return profilesExp, errorProfiles
