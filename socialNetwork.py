@@ -67,7 +67,10 @@ class LinkedIn(SocialNetwork):
         self.homePage = self.loginPage()
         self.countryDict = self.loadCountryDict()
         self.num_con = self.getNumCons()
-        self.conData = self.getConnections()
+        self.conUrls = self.getAllContacsJson()     # api2 json file which contains urls and all contacts info
+        self.conData = self.getConnections()        # api1 json file contains contatcs info but no urls
+        self.currentPath = os.path.dirname(os.path.abspath(__file__))
+
 
 
     def getNumCons(self):
@@ -384,14 +387,57 @@ class LinkedIn(SocialNetwork):
 
         return connectionsTree
 
-    def _getProfileData(self, profileID):
-        """The lower level method that parses the webpage for more detailed information."""
 
-        # TODO This method should be brough offline and all parsing should go offline from the local hard drive
+    def getAllContacsJson(self):
+        """ This function requests a json file which has all contatcs info including a contcats' page links.
+        The request uses a new linkedin api
+        """
+        jsonURL = 'https://www.linkedin.com/connected/api/v2/contacts?start=0&count={}&fields=id'.format(self.num_con)
 
-        profileURL = 'https://www.linkedin.com/profile/view?trk=contacts-contacts-list-contact_name-0&id='+str(profileID)
-        profilePage = self.loadPage(profileURL)
-        # profileConData = {nameLastname: {'first_name': name, 'last_name': lastname, 'id': profileID, 'connections':{}, 'workExperience':{} } }
+        try:
+            jsonData = self.loadPage(jsonURL)
+
+        except:
+            print 'could not request the json file.'
+
+        jsonData = json.loads(jsonData)
+        contactUrls = {i['name']: i['profileUrl'] for i in jsonData['values']}
+
+        return contactUrls
+
+
+    def downloadContactPages(self):
+        """This method writes the contacts' pages to the drive for further processing."""
+        profilesFolder ='profilesPages/'
+        fullDir = os.path.join(self.currentPath, profilesFolder)
+
+        # Check if the dir exists if not create a new one
+        if not os.path.exists(fullDir):
+            os.makedirs(fullDir)
+
+        profilePage = ''
+
+        # For name and its url, try to load the page and write it on the drive
+        for name, url in self.conUrls.items():
+
+            try:
+                profilePage = self.loadPage(url)
+
+            except IOError:
+                print 'failed to load {} page'.format(name)
+                continue
+
+            if profilePage != '':
+                with open(fullDir + name + '.html', 'w') as f:
+                    f.write(profilePage)
+
+
+    def parseContactPage(self, pageDir):
+        """The lower level method that parses a contact's webpage for extracting more detailed information."""
+        profilePage = ''
+        with open(pageDir, 'r') as f:
+            profilePage = f.read()
+
         city = None
         country = None
         rawLocation = None
@@ -453,78 +499,72 @@ class LinkedIn(SocialNetwork):
         return workExp, country, city, rawLocation
 
 
-    def getProfileData(self, name, lastname):
-        profileId = self._getProfileID(name, lastname)
-        workExp, country, city, rawLocation = self._getProfileData(profileId)
-        return workExp, country, city, rawLocation
-
-
-    def getAllData(self, fileDir, numberProfiles=-1, minSleepTime=4):
-
-        workExp = {}
-        errorProfiles = []
-        count = 0
-        profilesExp = {}
-        # if the the there was previous use of the method, the method will look for a file to update the initial dict
-        if os.path.exists(fileDir):
-            with open(fileDir,'r') as f:
-                profilesExp = json.load(f)
-        # random linkedin links
-        userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
-                            'https://www.linkedin.com/home?trk=nav_responsive_tab_home',
-                            'https://www.linkedin.com/premium/products?trk=nav_responsive_sub_nav_upgrade',
-                            'https://www.linkedin.com/people/pymk/hub?trk=hp-identity-connections',
-                            'https://www.linkedin.com/job/home?trk=nav_responsive_sub_nav_jobs',
-                            'https://www.linkedin.com/edu/?trk=nav_responsive_sub_nav_edu',
-                            'https://help.linkedin.com/app/home/',
-                            'https://www.linkedin.com/?trk=nav_logo',
-                            'https://www.linkedin.com/wvmx/profile?trk=nav_responsive_sub_nav_wvmp',
-                            'https://www.linkedin.com/ads/start?utm_source=li&utm_medium=el&utm_campaign=hb_tab_ads&src=li-nav&trk=nav_responsive_sub_nav_advertise']
-
-        for profile in self.conData['contacts']:
-
-            if count >= numberProfiles and numberProfiles != -1:
-                break
-            profilePic = profile['secure_profile_image_url']
-            profileId = int(profile['id'][3:])
-            nameLastname = profile['first_name'] + ' ' + profile['last_name']
-            #skip the profiles which are in the dictionary profilesExp
-            if nameLastname in profilesExp:
-                print 'skiping profile', profilesExp[nameLastname]['id']
-                continue
-
-            sleepTime = random.uniform(minSleepTime, minSleepTime*2)
-            time.sleep(sleepTime)
-            print sleepTime
-            randomPage = random.choice(userBehaviorUrls)
-
-            print 'visiting rand page'
-            self.loadPage(randomPage)
-
-            sleepTime = random.uniform(minSleepTime, minSleepTime*1.5)
-            time.sleep(sleepTime)
-
-            try:
-
-                try:
-                    print 'getting the profile exp', profileId
-                    workExp, country, city, rawLocation = self._getProfileData(profileId)
-                    profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic, 'city':city, 'linkedInLocation': rawLocation}
-                    print 'ok'
-                    print '### count:', count
-                    count +=1
-
-                except IOError:
-                    print 'could not get the profile exp', profileId
-                    print '!!! count', count
-                    break
-
-            except:
-                errorProfiles.append(profileId)
-                print '____ skipping profile', profileId
-                continue
-
-        with open(fileDir,'w') as f:
-            json.dump(profilesExp, f, indent=4, sort_keys=True)
-
-        return profilesExp, errorProfiles
+    # def getAllContatcsData(self, fileDir, numberProfiles=-1, minSleepTime=3):
+    #
+    #     workExp = {}
+    #     errorProfiles = []
+    #     count = 0
+    #     profilesExp = {}
+    #     # if the the there was previous use of the method, the method will look for a file to update the initial dict
+    #     if os.path.exists(fileDir):
+    #         with open(fileDir,'r') as f:
+    #             profilesExp = json.load(f)
+    #     # random linkedin links
+    #     userBehaviorUrls = ['https://www.linkedin.com/contacts/?filter=recent&trk=nav_responsive_tab_network#?filter=recent&trk=nav_responsive_tab_network',
+    #                         'https://www.linkedin.com/home?trk=nav_responsive_tab_home',
+    #                         'https://www.linkedin.com/premium/products?trk=nav_responsive_sub_nav_upgrade',
+    #                         'https://www.linkedin.com/people/pymk/hub?trk=hp-identity-connections',
+    #                         'https://www.linkedin.com/job/home?trk=nav_responsive_sub_nav_jobs',
+    #                         'https://www.linkedin.com/edu/?trk=nav_responsive_sub_nav_edu',
+    #                         'https://help.linkedin.com/app/home/',
+    #                         'https://www.linkedin.com/?trk=nav_logo',
+    #                         'https://www.linkedin.com/wvmx/profile?trk=nav_responsive_sub_nav_wvmp',
+    #                         'https://www.linkedin.com/ads/start?utm_source=li&utm_medium=el&utm_campaign=hb_tab_ads&src=li-nav&trk=nav_responsive_sub_nav_advertise']
+    #
+    #     for profile in self.conData['contacts']:
+    #
+    #         if count >= numberProfiles and numberProfiles != -1:
+    #             break
+    #         profilePic = profile['secure_profile_image_url']
+    #         profileId = int(profile['id'][3:])
+    #         nameLastname = profile['first_name'] + ' ' + profile['last_name']
+    #         #skip the profiles which are in the dictionary profilesExp
+    #         if nameLastname in profilesExp:
+    #             print 'skiping profile', profilesExp[nameLastname]['id']
+    #             continue
+    #
+    #         sleepTime = random.uniform(minSleepTime, minSleepTime)
+    #         time.sleep(sleepTime)
+    #         print sleepTime
+    #         randomPage = random.choice(userBehaviorUrls)
+    #
+    #         print 'visiting rand page'
+    #         self.loadPage(randomPage)
+    #
+    #         sleepTime = random.uniform(minSleepTime, minSleepTime)
+    #         time.sleep(sleepTime)
+    #
+    #         try:
+    #
+    #             try:
+    #                 print 'getting the profile exp', profileId
+    #                 workExp, country, city, rawLocation = self.parseContactPage(self.profileUrls)
+    #                 profilesExp[nameLastname] = {'workExp': workExp, 'id': profileId, 'country': country, 'profilePic': profilePic, 'city':city, 'linkedInLocation': rawLocation}
+    #                 print 'ok'
+    #                 print '### count:', count
+    #                 count +=1
+    #
+    #             except IOError:
+    #                 print 'could not get the profile exp', profileId
+    #                 print '!!! count', count
+    #                 break
+    #
+    #         except:
+    #             errorProfiles.append(profileId)
+    #             print '____ skipping profile', profileId
+    #             continue
+    #
+    #     with open(fileDir,'w') as f:
+    #         json.dump(profilesExp, f, indent=4, sort_keys=True)
+    #
+    #     return profilesExp, errorProfiles
