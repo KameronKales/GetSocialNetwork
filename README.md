@@ -8,7 +8,7 @@ Currently the supported platform is LinkedIn. The framework supports only Englis
 Usage:
 ```
 # Quick start:
-# Create a file in the module directory and type in this code
+# Create a file in the module directory and type in the following code
 # import all project libraries.
 
 from linkedInStats import LinkedInStats
