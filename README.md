@@ -1,20 +1,25 @@
 # GetSocialNetwork
 ![getsocialnetwork](https://cloud.githubusercontent.com/assets/14153294/10562118/923f4574-74ff-11e5-8288-c93f1d34c08e.jpg)
 
-## A framework to get data from a social network. Python 2.7.10 Data: 17.10.15
+## A framework to get data from a social network. Python 2.7.10 
 
 Currently the supported platform is LinkedIn. The framework supports only English language. The module doesn't need any external libs.
 
 Usage:
 ```
+# Quick start:
+# Create a file in the module directory and type in this code
 # import all project libraries.
-from GetSocialNetwork.linkedInStats import LinkedInStats
-from GetSocialNetwork.socialNetwork import LinkedIn
+
+from linkedInStats import LinkedInStats
+from socialNetwork import LinkedIn
 
 # initiazlie LinkedInStats class to login into the network.
 lstats = LinkedInStats('example@example.com', 'password')
 
-# first we need to create the database of all connections. The dataBase.json file will be saved in the root of the module.
+# first we need to create the database of all connections. 
+# The framework will download all contacts' profile pages to the local drive for further processing
+# Once the download is over, you'll get a dataBase.json file which will contain various enries about 1st level contacts.
 dataBase, errorProfiles = lstats.createDataBase(-1,4)
 
 # then we can call other methods which output txt file stats in the root of the module.
@@ -40,7 +45,7 @@ profileData = l.getProfileData('Name','Lastname')
 ![program pipeline](https://cloud.githubusercontent.com/assets/14153294/10562390/fe240676-750e-11e5-98f1-3e215bb137f4.jpg)
 
 Known bugs and restrictions.
-
+0. Since LinkedIn periodically updates its website api and html content some of GetSocialNetwork features might not work
 1. Sometimes, regex expressions do not grab the proper information. This results in minor inaccuracies in stats.
 2. Languages other than English are not supported. Thus, the profiles which use other languages may cause errors.
 3. The speed of scraping is deliberately limited, so LinkedIn doesn't think it is a bad bot.
