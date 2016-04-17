@@ -19,7 +19,7 @@ lstats = LinkedInStats('example@example.com', 'password')
 
 # first we need to create the database of all connections. 
 # The framework will download all contacts' profile pages to the local drive for further processing
-# Once the download is over, you'll get a dataBase.json file which will contain various enries about 1st level contacts.
+# Once the download is over, you'll get a dataBase.json file which will contain various entries about 1st level contacts.
 dataBase, errorProfiles = lstats.createDataBase(-1,4)
 
 # then we can call other methods which output txt file stats in the root of the module.
