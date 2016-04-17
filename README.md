@@ -29,10 +29,11 @@ lstats.locationStats()
 lstats.companyStats()
 lstats.workStats()
 ```
-The getSocialNetwork.py has data scraping methods. 
+The socialNetwork.py has data scraping methods. 
 
 Usage:
 ```
+from socialNetwork import LinkedIn
 # initialize the class.
 link = LinkedIn('example@example.com','password')
 # Get profile data by specifying name and lastname.
