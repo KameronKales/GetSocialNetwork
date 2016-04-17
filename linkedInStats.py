@@ -8,22 +8,28 @@ class LinkedInStats(object):
 
         self.link = LinkedIn(login, password)
         self.selfDir = os.path.dirname(__file__)
+        self.outputDir = 'output'
 
-        self.companyStatsDir = os.path.join(self.selfDir, "companies stats.txt")
-        self.countriesStatDir = os.path.join(self.selfDir, "countries stats.txt")
-        self.positionStats = os.path.join(self.selfDir, "position stats.txt")
-        self.workOverTimeStats = os.path.join(self.selfDir, "work time stats.txt")
-        self.expYears = os.path.join(self.selfDir, "exp years stats.txt")
-        self.dataBase = os.path.join(self.selfDir, "dataBase.json")
+        if not os.path.exists('output'):
+            os.makedirs('output')
+
+        self.companyStatsDir = os.path.join(self.outputDir, "companies stats.txt")
+        self.countriesStatDir = os.path.join(self.outputDir, "countries stats.txt")
+        self.positionStatsDir = os.path.join(self.outputDir, "position stats.txt")
+        self.workOverTimeStatsDir = os.path.join(self.outputDir, "work time stats.txt")
+        self.expYearsDir = os.path.join(self.outputDir, "exp years stats.txt")
+        self.dataBaseDir = os.path.join(self.outputDir, "dataBaseDir.json")
 
 
-    def createDataBase(self, numberProfiles=-1, sleepTime=4):
+    def createDataBase(self, numberProfiles=-1, sleepTime=1):
         """
-        This method goes through each profile in your connections and gets all the public
-        data necessary for further statistics.The method uses time.sleep call, so betwee each
-        profile query there is a user defined pause. By default the pause lasts 4 seconds.
+        This method will download all the contacts' profile html pages to the local drive and parse
+        them to create a json dataBaseDir. The method uses time intervals.
         """
-        data, errorProfiles = self.link.getAllData(self.dataBase, numberProfiles, sleepTime)
+        # Download pages to th local drive
+        self.link.downloadContactPages(sleepTime)
+        # Parse all the downloaded pages
+        data, errorProfiles = self.link.getAllContatcsData(self.dataBaseDir, numberProfiles, sleepTime)
         return data, errorProfiles
 
 
@@ -86,7 +92,7 @@ class LinkedInStats(object):
             count = len(positions[position])
             positionCount[position] = count
 
-        with open(self.positionStats,'w') as f:
+        with open(self.positionStatsDir,'w') as f:
             for position in positions:
                 self._write(f, position, positionCount[position], positions[position])
 
@@ -100,10 +106,10 @@ class LinkedInStats(object):
         countries = {}
         countryCount = {}
 
-        if not os.path.exists(self.dataBase):
-            raise IOError('##### This method needs a database. Run getConnectionsData() method first to create the database.')
+        if not os.path.exists(self.dataBaseDir):
+            raise IOError('##### This method needs a dataBaseDir. Run getConnectionsData() method first to create the dataBaseDir.')
 
-        with open(self.dataBase,'r') as f:
+        with open(self.dataBaseDir,'r') as f:
             profilesData = json.load(f)
 
         for profile in profilesData:
@@ -140,12 +146,12 @@ class LinkedInStats(object):
         for year in period:
             workTimeStats[str(year)]=[]
 
-        with open(self.dataBase, 'r') as f:
-            dataBase = json.load(f)
+        with open(self.dataBaseDir, 'r') as f:
+            dataBaseDir = json.load(f)
 
-        for profile in dataBase:
+        for profile in dataBaseDir:
             startCareer = []
-            workExp = dataBase[profile]['workExp']
+            workExp = dataBaseDir[profile]['workExp']
             tressholdYear = False
             for company in workExp:
                 startYear = utils.findInteger(workExp[company]['start'])
@@ -166,7 +172,7 @@ class LinkedInStats(object):
                 if not profile in totalPeople:
                     totalPeople.append(profile)
 
-        with open(self.workOverTimeStats, 'w') as f:
+        with open(self.workOverTimeStatsDir, 'w') as f:
             self._write(f,'total people', len(totalPeople) )
             for year in sorted(workTimeStats, key=lambda x: int(x) ):
                 count = len(workTimeStats[year])
@@ -178,14 +184,14 @@ class LinkedInStats(object):
         otherExp = []
         experience = {'under 5 years': [], 'under 10 years': [], 'under 15 years': [], 'under 20 years': [], 'under 30 years': [], 'over 30 years': []}
         count = 0
-        with open(self.dataBase, 'r') as f:
-            dataBase = json.load(f)
+        with open(self.dataBaseDir, 'r') as f:
+            dataBaseDir = json.load(f)
 
-        for profile in dataBase:
+        for profile in dataBaseDir:
             years = utils.WorkTime(0,0)
 
-            for company in dataBase[profile]['workExp']:
-                duration = dataBase[profile]['workExp'][company]['duration']
+            for company in dataBaseDir[profile]['workExp']:
+                duration = dataBaseDir[profile]['workExp'][company]['duration']
 
                 if not duration: continue
 
@@ -214,7 +220,7 @@ class LinkedInStats(object):
             else:
                 otherExp.append(profile)
 
-        with open(self.expYears, 'w') as f:
+        with open(self.expYearsDir, 'w') as f:
             for exp in experience:
                 self._write(f, exp, len(experience[exp]), experience[exp])
 
