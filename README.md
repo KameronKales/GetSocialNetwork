@@ -36,7 +36,7 @@ Usage:
 from socialNetwork import LinkedIn
 # initialize the class.
 link = LinkedIn('example@example.com','password')
-# Get profile data by specifying name and lastname.
+# Get profile n level connection by specifying name and lastname.
 profileData = l.get2ndConnections('Name','Lastname','fileDir')
 ```
 
