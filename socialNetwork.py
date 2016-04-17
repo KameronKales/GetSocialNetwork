@@ -21,8 +21,9 @@ class SocialNetwork(object):
         self.start_url = startURL
         self.login_url = loginURL
 
-    def loadPage(self, url, data = None, tryAgain = 2):
 
+    def loadPage(self, url, data = None, tryAgain = 2):
+        """Rquest and html page"""
         if tryAgain <= 0:
             raise IOError('{} {} is not accesable.'.format(url, data) )
 
@@ -57,8 +58,6 @@ class SocialNetwork(object):
 
 class LinkedIn(SocialNetwork):
     """The class that logins and reads a user's profile connection data."""
-
-
     def __init__(self, login, password):
         self.login = login
         self.password = password
