@@ -36,7 +36,7 @@ Usage:
 # initialize the class.
 link = LinkedIn('example@example.com','password')
 # Get profile data by specifying name and lastname.
-profileData = l.getProfileData('Name','Lastname')
+profileData = l.get2ndConnections('Name','Lastname','fileDir')
 ```
 
 #### The txt files created by LinkedInStats methods can be easily graphed in Excel.
