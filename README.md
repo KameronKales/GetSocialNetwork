@@ -40,7 +40,7 @@ link = LinkedIn('example@example.com','password')
 profileData = l.get2ndConnections('Name','Lastname','fileDir')
 ```
 
-#### The txt files created by LinkedInStats methods can be easily graphed in Excel.
+#### The txt files created by LinkedInStats methods can be easily graphed in Excel and Pandas.
 ![mystats](https://cloud.githubusercontent.com/assets/14153294/10562266/f5312988-7507-11e5-84eb-dcaa8efcf5a2.jpg)
 
 ![program pipeline](https://cloud.githubusercontent.com/assets/14153294/10562390/fe240676-750e-11e5-98f1-3e215bb137f4.jpg)
